@@ -1,5 +1,4 @@
-import { createServerSupabaseClient } from '@portfolio/supabase'
-import { cookies } from 'next/headers'
+import { createServerSupabaseClient } from '../../../../../../packages/supabase/src/server'
 import Link from 'next/link'
 import { format } from 'date-fns'
 import { id as localeId } from 'date-fns/locale'
@@ -9,8 +8,8 @@ function formatIDR(n: number) {
 }
 
 export default async function HistoryPage() {
-  const supabase = createServerSupabaseClient(cookies())
-  const { data: { session } } = await supabase.auth.getSession()
+const supabase = createServerSupabaseClient()  
+const { data: { session } } = await supabase.auth.getSession()
 
   const { data: bills } = await supabase
     .from('bills')

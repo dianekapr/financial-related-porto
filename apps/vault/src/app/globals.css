@@ -1,0 +1,61 @@
+@import url('https://fonts.googleapis.com/css2?family=Bebas+Neue&family=IBM+Plex+Mono:wght@400;500;600&family=Inter:wght@300;400;500;600&display=swap');
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --font-bebas: 'Bebas Neue';
+  --font-ibm-mono: 'IBM Plex Mono';
+  --font-inter: 'Inter';
+}
+
+* { box-sizing: border-box; }
+
+html, body {
+  background: #0A0A0A;
+  color: #E8E8E8;
+  min-height: 100dvh;
+  font-family: 'Inter', sans-serif;
+  -webkit-font-smoothing: antialiased;
+}
+
+/* Scrollbar */
+::-webkit-scrollbar { width: 4px; height: 4px; }
+::-webkit-scrollbar-track { background: #111; }
+::-webkit-scrollbar-thumb { background: #2A2A2A; border-radius: 2px; }
+::-webkit-scrollbar-thumb:hover { background: #C9A84C44; }
+
+/* Gold focus ring */
+*:focus-visible { outline: 2px solid #C9A84C; outline-offset: 2px; }
+
+/* Number animation */
+.animate-number { animation: numberPop 0.3s cubic-bezier(0.34, 1.56, 0.64, 1) forwards; }
+
+/* Glass card */
+.glass {
+  background: rgba(26, 26, 26, 0.8);
+  backdrop-filter: blur(12px);
+  border: 1px solid rgba(255,255,255,0.06);
+}
+
+/* Gold shimmer */
+.gold-shimmer {
+  background: linear-gradient(90deg, #C9A84C, #E8C96A, #C9A84C);
+  background-size: 200% auto;
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  animation: shimmer 3s linear infinite;
+}
+
+@keyframes shimmer {
+  to { background-position: 200% center; }
+}
+
+@keyframes numberPop {
+  from { transform: scale(0.85); opacity: 0; }
+  to { transform: scale(1); opacity: 1; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { animation-duration: 0.01ms !important; }
+}

@@ -1,0 +1,61 @@
+@import url('https://fonts.googleapis.com/css2?family=Courier+Prime:wght@400;700&family=Fredoka+One&family=Inter:wght@400;500;600&display=swap');
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+* { box-sizing: border-box; }
+
+html, body {
+  background: #FFFBEF;
+  color: #2D2D2D;
+  min-height: 100dvh;
+  font-family: 'Inter', sans-serif;
+  -webkit-font-smoothing: antialiased;
+}
+
+/* Serrated receipt edge */
+.receipt-edge-top {
+  background-image: radial-gradient(circle at 50% 0, #FFFBEF 6px, transparent 6px);
+  background-size: 16px 8px;
+  background-position: 0 0;
+  height: 8px;
+  margin-bottom: -1px;
+}
+.receipt-edge-bottom {
+  background-image: radial-gradient(circle at 50% 100%, #FFFBEF 6px, transparent 6px);
+  background-size: 16px 8px;
+  background-position: 0 100%;
+  height: 8px;
+  margin-top: -1px;
+}
+
+/* Dotted divider like receipt */
+.receipt-divider {
+  border: none;
+  border-top: 2px dashed #E8E0C8;
+  margin: 12px 0;
+}
+
+/* Orange focus ring */
+*:focus-visible { outline: 2px solid #FF5E1A; outline-offset: 2px; }
+
+/* Scrollbar */
+::-webkit-scrollbar { width: 4px; }
+::-webkit-scrollbar-track { background: #F5F0E0; }
+::-webkit-scrollbar-thumb { background: #E8E0C8; border-radius: 2px; }
+
+/* Member color pills */
+.member-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 2px 8px;
+  border-radius: 999px;
+  font-size: 11px;
+  font-weight: 600;
+  font-family: 'Inter', sans-serif;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { animation-duration: 0.01ms !important; }
+}

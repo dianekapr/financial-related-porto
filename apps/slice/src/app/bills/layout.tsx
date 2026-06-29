@@ -1,4 +1,4 @@
-import { createServerSupabaseClient } from '@portfolio/supabase'
+import { createServerSupabaseClient } from '../../../../../packages/supabase/src/server'
 import { redirect } from 'next/navigation'
 import SliceNav from '../../components/SliceNav'
 

@@ -1,4 +1,4 @@
-import { createServerSupabaseClient } from '@portfolio/supabase'
+import { createServerSupabaseClient } from '../../../../../packages/supabase/src/server'
 import BillsList from '../../components/bills/BillsList'
 
 export default async function BillsPage() {

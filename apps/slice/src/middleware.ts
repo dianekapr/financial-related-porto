@@ -26,18 +26,15 @@ export async function middleware(request: NextRequest) {
     }
   )
 
-  const { data: { session } } = await supabase.auth.getSession()
+const { data: { user } } = await supabase.auth.getUser()
   const { pathname } = request.nextUrl
 
-  // Protected routes - redirect to login if not authenticated
-  if (!session && pathname !== '/login' && !pathname.startsWith('/auth')) {
-    return NextResponse.redirect(new URL('/login', request.url))
-  }
-  
-  // Redirect to bills if already authenticated and trying to access login
-  if (session && pathname === '/login') {
-    return NextResponse.redirect(new URL('/bills', request.url))
-  }
+if (!user && pathname !== '/login' && !pathname.startsWith('/auth')) {
+  return NextResponse.redirect(new URL('/login', request.url))
+}
+if (user && pathname === '/login') {
+  return NextResponse.redirect(new URL('/bills', request.url))
+}
 
   return response
 }

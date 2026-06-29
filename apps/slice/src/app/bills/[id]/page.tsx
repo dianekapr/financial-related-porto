@@ -1,4 +1,4 @@
-import { createServerSupabaseClient } from '@portfolio/supabase'
+import { createServerSupabaseClient } from '../../../../../../packages/supabase/src/server'
 import { notFound } from 'next/navigation'
 import BillDetail from '../../../components/bills/BillDetail'
 

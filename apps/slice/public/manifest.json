@@ -1,0 +1,8 @@
+{
+  "name": "SLICE — Split Bill",
+  "short_name": "SLICE",
+  "theme_color": "#FF5E1A",
+  "background_color": "#FFFBEF",
+  "display": "standalone",
+  "start_url": "/bills"
+}

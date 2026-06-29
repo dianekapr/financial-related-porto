@@ -1,7 +1,7 @@
 import type { BillMember } from '@portfolio/supabase'
 
 function formatIDR(n: number) {
-  return n.toLocaleString('id-ID', { style: 'currency', currency: 'IDR', maximumFractionDigits: 0 })
+  return 'Rp\u00A0' + Math.round(n).toLocaleString('id-ID')
 }
 
 export default function SummaryCard({ member, total }: { member: BillMember; total: number }) {

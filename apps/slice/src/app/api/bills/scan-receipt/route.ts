@@ -27,24 +27,26 @@ export async function POST(req: Request) {
     const imgBuffer = await imgRes.arrayBuffer()
     const base64 = Buffer.from(imgBuffer).toString('base64')
 
-    const prompt = `Kamu adalah AI yang mengekstrak data dari foto struk/bill/receipt.
-Analisis gambar ini dan ekstrak semua item beserta harganya.
+    const prompt = `Kamu adalah AI yang mengekstrak data dari foto bill apapun bentuknya: struk belanja/restoran, invoice, tagihan listrik/air/internet/pulsa, bill langganan, nota, atau tagihan lainnya.
+Analisis gambar ini dan ekstrak rincian biayanya.
 Kembalikan HANYA JSON valid dengan format berikut, tidak ada teks lain, tidak ada markdown code block:
 
 {
-  "title": "Nama toko/restoran jika terlihat, atau null",
+  "title": "Nama toko/penyedia/perusahaan jika terlihat, atau null",
   "total": total_angka_numerik_atau_null,
   "items": [
-    { "name": "Nama item", "price": harga_satuan_numerik, "quantity": jumlah_integer }
+    { "name": "Nama item/biaya", "price": harga_satuan_numerik, "quantity": jumlah_integer }
   ]
 }
 
 Aturan:
-- Harga dalam Rupiah (IDR) tanpa simbol, hanya angka
+- Harga dalam Rupiah (IDR) tanpa simbol, hanya angka. Jika mata uang lain terlihat pada bill, tetap ambil angkanya apa adanya (jangan lakukan konversi)
+- Jika bill berupa daftar item/produk (struk belanja, restoran, invoice dengan line items), ekstrak tiap item beserta harga dan quantity-nya
+- Jika bill TIDAK punya rincian item (misal tagihan listrik, internet, langganan, atau nota dengan satu jumlah saja), buat satu item mewakili biaya tersebut (misal name: "Tagihan Listrik") dengan price = total dan quantity = 1
 - Jika ada diskon, kurangi langsung dari item terkait atau buat item terpisah dengan harga negatif
 - Jika quantity tidak terlihat, asumsikan 1
 - Gunakan bahasa Indonesia untuk nama item jika memungkinkan
-- Jika gambar bukan struk, kembalikan: {"title": null, "total": null, "items": []}`
+- Jika gambar sama sekali bukan bill/struk/tagihan/invoice (misal foto random), baru kembalikan: {"title": null, "total": null, "items": []}`
 
     // Call Google Gemini Vision (gemini-1.5-flash - free tier generous)
     const geminiRes = await fetch(

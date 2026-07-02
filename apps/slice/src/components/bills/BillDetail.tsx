@@ -56,7 +56,7 @@ export default function BillDetail({
       await supabase.storage.from('receipts').upload(path, file)
       const { data: { publicUrl } } = supabase.storage.from('receipts').getPublicUrl(path)
 
-      // Call Claude Vision API route
+      // Call Gemini Vision API route
       const res = await fetch('/api/bills/scan-receipt', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },

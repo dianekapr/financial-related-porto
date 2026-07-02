@@ -51,59 +51,73 @@ Aturan:
 - Gunakan bahasa Indonesia untuk nama item jika memungkinkan
 - Jika gambar sama sekali bukan bill/struk/tagihan/invoice (misal foto random), baru kembalikan: {"title": null, "total": null, "items": []}`
 
-    // Call Google Gemini Vision (gemini-1.5-flash - free tier generous)
-    const geminiRes = await fetch(
-      `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${process.env.GEMINI_API_KEY}`,
-      {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          contents: [
-            {
-              parts: [
-                { text: prompt },
-                { inline_data: { mime_type: mimeType, data: base64 } },
-              ],
+    // Call Gemini Vision, with one retry if the model comes back empty —
+    // vision extraction on noisy/glare-y thermal receipts is flaky, and a
+    // second pass at temperature 0 recovers a good chunk of those misses
+    const callGemini = async (temperature: number) => {
+      const geminiRes = await fetch(
+        `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${process.env.GEMINI_API_KEY}`,
+        {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            contents: [
+              {
+                parts: [
+                  { text: prompt },
+                  { inline_data: { mime_type: mimeType, data: base64 } },
+                ],
+              },
+            ],
+            generationConfig: {
+              temperature,
+              responseMimeType: 'application/json',
+              maxOutputTokens: 8192,
             },
-          ],
-          generationConfig: {
-            temperature: 0.1,
-            responseMimeType: 'application/json',
-            maxOutputTokens: 8192,
-          },
-        }),
+          }),
+        }
+      )
+
+      if (!geminiRes.ok) {
+        const errText = await geminiRes.text()
+        console.error('Gemini API error:', errText)
+        return { error: 'Gagal menghubungi AI scanner, coba lagi.' } as const
       }
-    )
 
-    if (!geminiRes.ok) {
-      const errText = await geminiRes.text()
-      console.error('Gemini API error:', errText)
-      return NextResponse.json({ error: 'Gagal menghubungi AI scanner, coba lagi.', items: [], total: null, title: null }, { status: 500 })
+      const geminiData = await geminiRes.json()
+      const candidate = geminiData.candidates?.[0]
+      const text = candidate?.content?.parts?.[0]?.text ?? '{}'
+
+      if (candidate?.finishReason === 'MAX_TOKENS') {
+        console.error('Gemini response truncated (MAX_TOKENS)')
+        return { error: 'Struk terlalu panjang untuk dibaca sekaligus, coba foto sebagian atau tambah manual.' } as const
+      }
+
+      try {
+        const jsonMatch = text.match(/\{[\s\S]*\}/)
+        const parsed: ScannedReceipt = jsonMatch ? JSON.parse(jsonMatch[0]) : { items: [], total: null, title: null }
+        return { parsed } as const
+      } catch (parseErr) {
+        console.error('Failed to parse Gemini JSON:', parseErr, 'raw text:', text)
+        return { error: 'Gagal membaca hasil scan, coba foto ulang dengan pencahayaan lebih baik.' } as const
+      }
     }
 
-    const geminiData = await geminiRes.json()
-    const candidate = geminiData.candidates?.[0]
-    const text = candidate?.content?.parts?.[0]?.text ?? '{}'
+    const isEmpty = (r: ScannedReceipt) => !r.items?.length && r.total === null && r.title === null
 
-    if (candidate?.finishReason === 'MAX_TOKENS') {
-      console.error('Gemini response truncated (MAX_TOKENS)')
-      return NextResponse.json({ error: 'Struk terlalu panjang untuk dibaca sekaligus, coba foto sebagian atau tambah manual.', items: [], total: null, title: null }, { status: 500 })
+    let result = await callGemini(0.1)
+    if (result.parsed && isEmpty(result.parsed)) {
+      result = await callGemini(0)
     }
 
-    // Parse JSON from Gemini response
-    let parsed: ScannedReceipt
-    try {
-      const jsonMatch = text.match(/\{[\s\S]*\}/)
-      parsed = jsonMatch ? JSON.parse(jsonMatch[0]) : { items: [], total: null, title: null }
-    } catch (parseErr) {
-      console.error('Failed to parse Gemini JSON:', parseErr, 'raw text:', text)
-      return NextResponse.json({ error: 'Gagal membaca hasil scan, coba foto ulang dengan pencahayaan lebih baik.', items: [], total: null, title: null }, { status: 500 })
+    if (result.error) {
+      return NextResponse.json({ error: result.error, items: [], total: null, title: null }, { status: 500 })
     }
 
     // Update bill receipt_url
     await supabase.from('bills').update({ receipt_url: imageUrl }).eq('id', billId)
 
-    return NextResponse.json(parsed)
+    return NextResponse.json(result.parsed)
   } catch (err) {
     console.error('Vision scan error:', err)
     return NextResponse.json({ error: 'Scan gagal, coba lagi.', items: [], total: null, title: null }, { status: 500 })

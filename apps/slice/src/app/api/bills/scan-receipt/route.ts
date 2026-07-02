@@ -7,8 +7,9 @@ export async function POST(req: Request) {
   const { data: { session } } = await supabase.auth.getSession()
   if (!session) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 
-  const { billId, imageUrl } = await req.json()
+  const { billId, imageUrl, currency } = await req.json()
   if (!billId || !imageUrl) return NextResponse.json({ error: 'Missing params' }, { status: 400 })
+  const cur = typeof currency === 'string' && currency.trim() ? currency.trim().toUpperCase() : 'IDR'
 
   try {
     // Fetch image and convert to base64
@@ -28,6 +29,8 @@ export async function POST(req: Request) {
     const base64 = Buffer.from(imgBuffer).toString('base64')
 
     const prompt = `Kamu adalah AI yang mengekstrak data dari foto bill apapun bentuknya: struk belanja/restoran, invoice, tagihan listrik/air/internet/pulsa, bill langganan, nota, atau tagihan lainnya.
+Foto bisa saja miring, sedikit blur, kualitas rendah, atau kertas thermal yang pudar — tetap lakukan yang terbaik untuk membaca semua teks dan angka yang ada.
+Mata uang pada bill ini adalah ${cur}.
 Analisis gambar ini dan ekstrak rincian biayanya.
 Kembalikan HANYA JSON valid dengan format berikut, tidak ada teks lain, tidak ada markdown code block:
 
@@ -40,7 +43,7 @@ Kembalikan HANYA JSON valid dengan format berikut, tidak ada teks lain, tidak ad
 }
 
 Aturan:
-- Harga dalam Rupiah (IDR) tanpa simbol, hanya angka. Jika mata uang lain terlihat pada bill, tetap ambil angkanya apa adanya (jangan lakukan konversi)
+- Angka harga dikembalikan tanpa simbol mata uang, hanya angka murni (mis. jika mata uang IDR dan tertulis "40.600" itu berarti 40600; jika mata uang USD dan tertulis "40.60" itu berarti 40.6). Sesuaikan pembacaan pemisah ribuan/desimal dengan konvensi mata uang ${cur}. Jangan lakukan konversi ke mata uang lain
 - Jika bill berupa daftar item/produk (struk belanja, restoran, invoice dengan line items), ekstrak tiap item beserta harga dan quantity-nya
 - Jika bill TIDAK punya rincian item (misal tagihan listrik, internet, langganan, atau nota dengan satu jumlah saja), buat satu item mewakili biaya tersebut (misal name: "Tagihan Listrik") dengan price = total dan quantity = 1
 - Jika ada diskon, kurangi langsung dari item terkait atau buat item terpisah dengan harga negatif

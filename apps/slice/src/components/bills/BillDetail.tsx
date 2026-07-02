@@ -13,6 +13,30 @@ function formatIDR(n: number) {
   return n.toLocaleString('id-ID', { style: 'currency', currency: 'IDR', maximumFractionDigits: 0 })
 }
 
+const CURRENCIES = ['IDR', 'USD', 'EUR', 'SGD', 'MYR', 'JPY', 'GBP', 'AUD']
+
+// Photos from phone cameras are often stored sideways with the correct
+// orientation only recorded in EXIF. Re-drawing to a canvas bakes the
+// EXIF orientation into the pixels so the vision model always sees an
+// upright image, and downscaling keeps the upload/inference fast.
+async function normalizeImage(file: File): Promise<Blob> {
+  try {
+    const bitmap = await createImageBitmap(file, { imageOrientation: 'from-image' })
+    const maxEdge = 1800
+    const scale = Math.min(1, maxEdge / Math.max(bitmap.width, bitmap.height))
+    const canvas = document.createElement('canvas')
+    canvas.width = Math.round(bitmap.width * scale)
+    canvas.height = Math.round(bitmap.height * scale)
+    const ctx = canvas.getContext('2d')
+    if (!ctx) return file
+    ctx.drawImage(bitmap, 0, 0, canvas.width, canvas.height)
+    const blob: Blob | null = await new Promise(resolve => canvas.toBlob(resolve, 'image/jpeg', 0.85))
+    return blob ?? file
+  } catch {
+    return file
+  }
+}
+
 export default function BillDetail({
   bill, members, items: initialItems,
 }: {

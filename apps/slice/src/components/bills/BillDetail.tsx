@@ -82,11 +82,23 @@ export default function BillDetail({
       // photos don't confuse the vision model
       const normalized = await normalizeImage(file)
 
-      // Upload to Supabase storage
+      // Upload to Supabase storage, with retries — mobile uploads (esp.
+      // right after the native camera/gallery sheet closes) can hit a
+      // transient network blip that has nothing to do with the photo itself
       const { data: { session } } = await supabase.auth.getSession()
       const path = `${session!.user.id}/${bill.id}/${Date.now()}.jpg`
-      const { error: uploadError } = await supabase.storage.from('receipts').upload(path, normalized, { contentType: 'image/jpeg' })
-      if (uploadError) throw uploadError
+      let uploadError: Error | null = null
+      for (let attempt = 0; attempt <= 2; attempt++) {
+        const { error } = await supabase.storage.from('receipts').upload(path, normalized, { contentType: 'image/jpeg' })
+        uploadError = error
+        if (!error) break
+        if (attempt < 2) await new Promise(r => setTimeout(r, 700 * (attempt + 1)))
+      }
+      if (uploadError) {
+        console.error('Upload failed after retries:', uploadError)
+        setScanError('Gagal upload foto, cek koneksi internet dan coba lagi.')
+        return
+      }
       const { data: { publicUrl } } = supabase.storage.from('receipts').getPublicUrl(path)
 
       // Call Gemini Vision API route

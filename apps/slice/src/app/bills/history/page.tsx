@@ -4,7 +4,7 @@ import { format } from 'date-fns'
 import { id as localeId } from 'date-fns/locale'
 
 function formatIDR(n: number) {
-  return n.toLocaleString('id-ID', { style: 'currency', currency: 'IDR', maximumFractionDigits: 0 })
+  return 'Rp ' + Math.round(n).toLocaleString('id-ID')
 }
 
 export default async function HistoryPage() {

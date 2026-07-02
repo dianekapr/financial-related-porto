@@ -10,7 +10,7 @@ import SettleModal from './SettleModal'
 type FullItem = BillItem & { assignments: (BillItemAssignment & { member: BillMember | null })[] }
 
 function formatIDR(n: number) {
-  return n.toLocaleString('id-ID', { style: 'currency', currency: 'IDR', maximumFractionDigits: 0 })
+  return 'Rp ' + Math.round(n).toLocaleString('id-ID')
 }
 
 const CURRENCIES = ['IDR', 'USD', 'EUR', 'SGD', 'MYR', 'JPY', 'GBP', 'AUD']

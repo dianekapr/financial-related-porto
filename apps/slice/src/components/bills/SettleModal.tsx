@@ -7,7 +7,7 @@ import type { Bill, BillMember } from '@portfolio/supabase'
 type MemberWithTotal = BillMember & { total: number }
 
 function formatIDR(n: number) {
-  return n.toLocaleString('id-ID', { style: 'currency', currency: 'IDR', maximumFractionDigits: 0 })
+  return 'Rp ' + Math.round(n).toLocaleString('id-ID')
 }
 
 // Compute minimal transactions to settle debts

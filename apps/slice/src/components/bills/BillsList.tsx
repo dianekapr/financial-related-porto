@@ -7,7 +7,7 @@ import { id as localeId } from 'date-fns/locale'
 import CreateBillModal from './CreateBillModal'
 
 function formatIDR(n: number) {
-  return n.toLocaleString('id-ID', { style: 'currency', currency: 'IDR', maximumFractionDigits: 0 })
+  return 'Rp ' + Math.round(n).toLocaleString('id-ID')
 }
 
 type BillWithMembers = Bill & { members: BillMember[] }

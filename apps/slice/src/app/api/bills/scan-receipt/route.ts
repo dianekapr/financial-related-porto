@@ -51,63 +51,82 @@ Aturan:
 - Gunakan bahasa Indonesia untuk nama item jika memungkinkan
 - Jika gambar sama sekali bukan bill/struk/tagihan/invoice (misal foto random), baru kembalikan: {"title": null, "total": null, "items": []}`
 
-    // Call Gemini Vision, with one retry if the model comes back empty —
-    // vision extraction on noisy/glare-y thermal receipts is flaky, and a
-    // second pass at temperature 0 recovers a good chunk of those misses
-    const callGemini = async (temperature: number) => {
-      const geminiRes = await fetch(
-        `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${process.env.GEMINI_API_KEY}`,
-        {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            contents: [
-              {
-                parts: [
-                  { text: prompt },
-                  { inline_data: { mime_type: mimeType, data: base64 } },
-                ],
+    const sleep = (ms: number) => new Promise(resolve => setTimeout(resolve, ms))
+
+    // One attempt at the Gemini API, with its own retry for transient
+    // 503/429 (model overloaded / rate limited) since those clear up
+    // within a second or two on Google's end
+    const callGeminiOnce = async (temperature: number) => {
+      const MAX_TRANSIENT_RETRIES = 2
+      for (let attempt = 0; attempt <= MAX_TRANSIENT_RETRIES; attempt++) {
+        const geminiRes = await fetch(
+          `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${process.env.GEMINI_API_KEY}`,
+          {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              contents: [
+                {
+                  parts: [
+                    { text: prompt },
+                    { inline_data: { mime_type: mimeType, data: base64 } },
+                  ],
+                },
+              ],
+              generationConfig: {
+                temperature,
+                responseMimeType: 'application/json',
+                maxOutputTokens: 8192,
               },
-            ],
-            generationConfig: {
-              temperature,
-              responseMimeType: 'application/json',
-              maxOutputTokens: 8192,
-            },
-          }),
+            }),
+          }
+        )
+
+        if (!geminiRes.ok) {
+          const errText = await geminiRes.text()
+          console.error('Gemini API error:', geminiRes.status, errText)
+          if ((geminiRes.status === 503 || geminiRes.status === 429) && attempt < MAX_TRANSIENT_RETRIES) {
+            await sleep(700 * (attempt + 1))
+            continue
+          }
+          return {
+            error: geminiRes.status === 503 || geminiRes.status === 429
+              ? 'Server AI lagi sibuk banget, coba beberapa saat lagi ya.'
+              : 'Gagal menghubungi AI scanner, coba lagi.'
+          } as const
         }
-      )
 
-      if (!geminiRes.ok) {
-        const errText = await geminiRes.text()
-        console.error('Gemini API error:', errText)
-        return { error: 'Gagal menghubungi AI scanner, coba lagi.' } as const
+        const geminiData = await geminiRes.json()
+        const candidate = geminiData.candidates?.[0]
+        const text = candidate?.content?.parts?.[0]?.text ?? '{}'
+
+        if (candidate?.finishReason === 'MAX_TOKENS') {
+          console.error('Gemini response truncated (MAX_TOKENS)')
+          return { error: 'Struk terlalu panjang untuk dibaca sekaligus, coba foto sebagian atau tambah manual.' } as const
+        }
+
+        try {
+          const jsonMatch = text.match(/\{[\s\S]*\}/)
+          const parsed: ScannedReceipt = jsonMatch ? JSON.parse(jsonMatch[0]) : { items: [], total: null, title: null }
+          return { parsed } as const
+        } catch (parseErr) {
+          console.error('Failed to parse Gemini JSON:', parseErr, 'raw text:', text)
+          return { error: 'Gagal membaca hasil scan, coba foto ulang dengan pencahayaan lebih baik.' } as const
+        }
       }
-
-      const geminiData = await geminiRes.json()
-      const candidate = geminiData.candidates?.[0]
-      const text = candidate?.content?.parts?.[0]?.text ?? '{}'
-
-      if (candidate?.finishReason === 'MAX_TOKENS') {
-        console.error('Gemini response truncated (MAX_TOKENS)')
-        return { error: 'Struk terlalu panjang untuk dibaca sekaligus, coba foto sebagian atau tambah manual.' } as const
-      }
-
-      try {
-        const jsonMatch = text.match(/\{[\s\S]*\}/)
-        const parsed: ScannedReceipt = jsonMatch ? JSON.parse(jsonMatch[0]) : { items: [], total: null, title: null }
-        return { parsed } as const
-      } catch (parseErr) {
-        console.error('Failed to parse Gemini JSON:', parseErr, 'raw text:', text)
-        return { error: 'Gagal membaca hasil scan, coba foto ulang dengan pencahayaan lebih baik.' } as const
-      }
+      // Unreachable, satisfies TS
+      return { error: 'Gagal menghubungi AI scanner, coba lagi.' } as const
     }
 
+    // On top of the transient-error retry above, also retry once more if
+    // the model came back with a genuinely empty read — noisy/glare-y
+    // thermal receipts are flaky, and a second pass at temperature 0
+    // recovers a good chunk of those misses
     const isEmpty = (r: ScannedReceipt) => !r.items?.length && r.total === null && r.title === null
 
-    let result = await callGemini(0.1)
+    let result = await callGeminiOnce(0.1)
     if (result.parsed && isEmpty(result.parsed)) {
-      result = await callGemini(0)
+      result = await callGeminiOnce(0)
     }
 
     if (result.error) {

@@ -72,23 +72,35 @@ export default function BillDetail({
   // Upload & scan receipt
   const handleUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0]
+    e.target.value = ''
     if (!file) return
     setScanning(true)
+    setScanError(null)
 
     try {
+      // Normalize orientation/size before upload so sideways camera
+      // photos don't confuse the vision model
+      const normalized = await normalizeImage(file)
+
       // Upload to Supabase storage
       const { data: { session } } = await supabase.auth.getSession()
-      const path = `${session!.user.id}/${bill.id}/${Date.now()}-${file.name}`
-      await supabase.storage.from('receipts').upload(path, file)
+      const path = `${session!.user.id}/${bill.id}/${Date.now()}.jpg`
+      const { error: uploadError } = await supabase.storage.from('receipts').upload(path, normalized, { contentType: 'image/jpeg' })
+      if (uploadError) throw uploadError
       const { data: { publicUrl } } = supabase.storage.from('receipts').getPublicUrl(path)
 
       // Call Gemini Vision API route
       const res = await fetch('/api/bills/scan-receipt', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ billId: bill.id, imageUrl: publicUrl }),
+        body: JSON.stringify({ billId: bill.id, imageUrl: publicUrl, currency }),
       })
       const scanned: ScannedReceipt = await res.json()
+
+      if (scanned.error) {
+        setScanError(scanned.error)
+        return
+      }
 
       if (scanned.items?.length) {
         // Insert scanned items to DB
@@ -111,9 +123,12 @@ export default function BillDetail({
         await supabase.from('bills').update({ total, receipt_url: publicUrl }).eq('id', bill.id)
 
         router.refresh()
+      } else {
+        setScanError('Nggak ketemu item di foto ini. Coba foto yang lebih jelas/terang, atau tambah manual.')
       }
     } catch (err) {
       console.error('Scan failed:', err)
+      setScanError('Scan gagal, coba lagi.')
     } finally {
       setScanning(false)
     }

@@ -221,18 +221,28 @@ export default function BillDetail({
             <p className="font-receipt text-slice-muted text-xs">{items.length} item</p>
           </div>
           <div className="flex items-center gap-2">
+            {/* Currency for scanning */}
+            <select
+              value={currency}
+              onChange={e => setCurrency(e.target.value)}
+              disabled={scanning}
+              title="Mata uang di struk"
+              className="bg-white border border-slice-border rounded-xl px-2 py-2 text-xs text-slice-dark focus:outline-none focus:border-slice-orange/60"
+            >
+              {CURRENCIES.map(c => <option key={c} value={c}>{c}</option>)}
+            </select>
             {/* Upload buttons */}
             <button
               onClick={() => cameraRef.current?.click()}
               disabled={scanning}
-              className="flex items-center gap-1.5 bg-white border border-slice-border rounded-xl px-3 py-2 text-sm text-slice-dark hover:border-slice-orange/40 transition-all text-xs font-medium"
+              className="flex items-center gap-1.5 bg-white border border-slice-border rounded-xl px-3 py-2 text-sm text-slice-dark hover:border-slice-orange/40 transition-all text-xs font-medium disabled:opacity-60"
             >
               {scanning ? '🔍 Scanning...' : '📷 Kamera'}
             </button>
             <button
               onClick={() => galleryRef.current?.click()}
               disabled={scanning}
-              className="flex items-center gap-1.5 bg-white border border-slice-border rounded-xl px-3 py-2 text-sm text-slice-dark hover:border-slice-orange/40 transition-all text-xs font-medium"
+              className="flex items-center gap-1.5 bg-white border border-slice-border rounded-xl px-3 py-2 text-sm text-slice-dark hover:border-slice-orange/40 transition-all text-xs font-medium disabled:opacity-60"
             >
               {scanning ? '🔍 Scanning...' : '🖼️ Galeri'}
             </button>
@@ -246,6 +256,13 @@ export default function BillDetail({
           <input ref={cameraRef} type="file" accept="image/*" capture="environment" className="hidden" onChange={handleUpload} />
           <input ref={galleryRef} type="file" accept="image/*" className="hidden" onChange={handleUpload} />
         </div>
+
+        {scanError && (
+          <div className="px-5 py-3 bg-red-50 border-b border-red-100 flex items-center justify-between gap-2">
+            <p className="text-red-600 text-xs">{scanError}</p>
+            <button onClick={() => setScanError(null)} className="text-red-400 hover:text-red-600 text-xs shrink-0">✕</button>
+          </div>
+        )}
 
         {/* Items */}
         <div className="divide-y divide-slice-border">

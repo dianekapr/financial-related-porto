@@ -52,9 +52,11 @@ export default function BillDetail({
 
   const [items, setItems] = useState<FullItem[]>(initialItems)
   const [scanning, setScanning] = useState(false)
+  const [scanError, setScanError] = useState<string | null>(null)
   const [showSettle, setShowSettle] = useState(false)
   const [newItem, setNewItem] = useState({ name: '', price: '', qty: '1' })
   const [showAddItem, setShowAddItem] = useState(false)
+  const [currency, setCurrency] = useState('IDR')
 
   // Compute per-member totals
   const memberTotals = members.map(m => {

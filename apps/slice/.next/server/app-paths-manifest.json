@@ -1,6 +1,4 @@
 {
-  "/not-found": "app/not-found.js",
-  "/bills/page": "app/bills/page.js",
-  "/bills/[id]/page": "app/bills/[id]/page.js",
-  "/bills/history/page": "app/bills/history/page.js"
+  "/api/bills/scan-receipt/route": "app/api/bills/scan-receipt/route.js",
+  "/bills/[id]/page": "app/bills/[id]/page.js"
 }

@@ -13,9 +13,19 @@ export async function POST(req: Request) {
   try {
     // Fetch image and convert to base64
     const imgRes = await fetch(imageUrl)
+    if (!imgRes.ok) {
+      console.error('Failed to fetch image:', imgRes.status, await imgRes.text())
+      return NextResponse.json({ error: 'Gagal mengambil gambar struk', items: [], total: null, title: null }, { status: 500 })
+    }
+
+    const mimeType = imgRes.headers.get('content-type') ?? 'image/jpeg'
+    if (!mimeType.startsWith('image/')) {
+      console.error('Fetched content is not an image, got:', mimeType)
+      return NextResponse.json({ error: 'File bukan gambar yang valid. Pastikan bucket storage sudah public.', items: [], total: null, title: null }, { status: 500 })
+    }
+
     const imgBuffer = await imgRes.arrayBuffer()
     const base64 = Buffer.from(imgBuffer).toString('base64')
-    const mimeType = imgRes.headers.get('content-type') ?? 'image/jpeg'
 
     const prompt = `Kamu adalah AI yang mengekstrak data dari foto struk/bill/receipt.
 Analisis gambar ini dan ekstrak semua item beserta harganya.
@@ -38,7 +48,7 @@ Aturan:
 
     // Call Google Gemini Vision (gemini-1.5-flash - free tier generous)
     const geminiRes = await fetch(
-      `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${process.env.GEMINI_API_KEY}`,
+      `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${process.env.GEMINI_API_KEY}`,
       {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },

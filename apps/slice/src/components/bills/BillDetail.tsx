@@ -22,7 +22,8 @@ export default function BillDetail({
 }) {
   const router = useRouter()
   const supabase = createClient()
-  const fileRef = useRef<HTMLInputElement>(null)
+  const cameraRef = useRef<HTMLInputElement>(null)
+  const galleryRef = useRef<HTMLInputElement>(null)
   const [isPending, startTransition] = useTransition()
 
   const [items, setItems] = useState<FullItem[]>(initialItems)
@@ -179,13 +180,20 @@ export default function BillDetail({
             <p className="font-receipt text-slice-muted text-xs">{items.length} item</p>
           </div>
           <div className="flex items-center gap-2">
-            {/* Upload button */}
+            {/* Upload buttons */}
             <button
-              onClick={() => fileRef.current?.click()}
+              onClick={() => cameraRef.current?.click()}
               disabled={scanning}
               className="flex items-center gap-1.5 bg-white border border-slice-border rounded-xl px-3 py-2 text-sm text-slice-dark hover:border-slice-orange/40 transition-all text-xs font-medium"
             >
-              {scanning ? '🔍 Scanning...' : '📷 Scan Struk'}
+              {scanning ? '🔍 Scanning...' : '📷 Kamera'}
+            </button>
+            <button
+              onClick={() => galleryRef.current?.click()}
+              disabled={scanning}
+              className="flex items-center gap-1.5 bg-white border border-slice-border rounded-xl px-3 py-2 text-sm text-slice-dark hover:border-slice-orange/40 transition-all text-xs font-medium"
+            >
+              {scanning ? '🔍 Scanning...' : '🖼️ Galeri'}
             </button>
             <button
               onClick={() => setShowAddItem(true)}
@@ -194,7 +202,8 @@ export default function BillDetail({
               + Item
             </button>
           </div>
-          <input ref={fileRef} type="file" accept="image/*" capture="environment" className="hidden" onChange={handleUpload} />
+          <input ref={cameraRef} type="file" accept="image/*" capture="environment" className="hidden" onChange={handleUpload} />
+          <input ref={galleryRef} type="file" accept="image/*" className="hidden" onChange={handleUpload} />
         </div>
 
         {/* Items */}

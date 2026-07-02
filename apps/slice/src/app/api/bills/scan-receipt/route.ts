@@ -69,6 +69,7 @@ Aturan:
           generationConfig: {
             temperature: 0.1,
             responseMimeType: 'application/json',
+            maxOutputTokens: 8192,
           },
         }),
       }
@@ -77,15 +78,27 @@ Aturan:
     if (!geminiRes.ok) {
       const errText = await geminiRes.text()
       console.error('Gemini API error:', errText)
-      return NextResponse.json({ error: 'Scan failed', items: [], total: null, title: null }, { status: 500 })
+      return NextResponse.json({ error: 'Gagal menghubungi AI scanner, coba lagi.', items: [], total: null, title: null }, { status: 500 })
     }
 
     const geminiData = await geminiRes.json()
-    const text = geminiData.candidates?.[0]?.content?.parts?.[0]?.text ?? '{}'
+    const candidate = geminiData.candidates?.[0]
+    const text = candidate?.content?.parts?.[0]?.text ?? '{}'
+
+    if (candidate?.finishReason === 'MAX_TOKENS') {
+      console.error('Gemini response truncated (MAX_TOKENS)')
+      return NextResponse.json({ error: 'Struk terlalu panjang untuk dibaca sekaligus, coba foto sebagian atau tambah manual.', items: [], total: null, title: null }, { status: 500 })
+    }
 
     // Parse JSON from Gemini response
-    const jsonMatch = text.match(/\{[\s\S]*\}/)
-    const parsed: ScannedReceipt = jsonMatch ? JSON.parse(jsonMatch[0]) : { items: [], total: null, title: null }
+    let parsed: ScannedReceipt
+    try {
+      const jsonMatch = text.match(/\{[\s\S]*\}/)
+      parsed = jsonMatch ? JSON.parse(jsonMatch[0]) : { items: [], total: null, title: null }
+    } catch (parseErr) {
+      console.error('Failed to parse Gemini JSON:', parseErr, 'raw text:', text)
+      return NextResponse.json({ error: 'Gagal membaca hasil scan, coba foto ulang dengan pencahayaan lebih baik.', items: [], total: null, title: null }, { status: 500 })
+    }
 
     // Update bill receipt_url
     await supabase.from('bills').update({ receipt_url: imageUrl }).eq('id', billId)
@@ -93,6 +106,6 @@ Aturan:
     return NextResponse.json(parsed)
   } catch (err) {
     console.error('Vision scan error:', err)
-    return NextResponse.json({ error: 'Scan failed', items: [], total: null, title: null }, { status: 500 })
+    return NextResponse.json({ error: 'Scan gagal, coba lagi.', items: [], total: null, title: null }, { status: 500 })
   }
 }

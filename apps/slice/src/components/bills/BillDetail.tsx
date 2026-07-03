@@ -3,17 +3,12 @@ import { useState, useTransition, useRef } from 'react'
 import { useRouter } from 'next/navigation'
 import { createClient } from '@portfolio/supabase'
 import type { Bill, BillMember, BillItem, BillItemAssignment, ScannedReceipt } from '@portfolio/supabase'
+import { formatMoney } from '../../lib/money'
 import SummaryCard from './SummaryCard'
 import ItemRow from './ItemRow'
 import SettleModal from './SettleModal'
 
 type FullItem = BillItem & { assignments: (BillItemAssignment & { member: BillMember | null })[] }
-
-function formatIDR(n: number) {
-  return 'Rp ' + Math.round(n).toLocaleString('id-ID')
-}
-
-const CURRENCIES = ['IDR', 'USD', 'EUR', 'SGD', 'MYR', 'JPY', 'GBP', 'AUD']
 
 // Photos from phone cameras are often stored sideways with the correct
 // orientation only recorded in EXIF. Re-drawing to a canvas bakes the
@@ -56,7 +51,6 @@ export default function BillDetail({
   const [showSettle, setShowSettle] = useState(false)
   const [newItem, setNewItem] = useState({ name: '', price: '', qty: '1' })
   const [showAddItem, setShowAddItem] = useState(false)
-  const [currency, setCurrency] = useState('IDR')
 
   // Compute per-member totals
   const memberTotals = members.map(m => {
@@ -105,7 +99,7 @@ export default function BillDetail({
       const res = await fetch('/api/bills/scan-receipt', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ billId: bill.id, imageUrl: publicUrl, currency }),
+        body: JSON.stringify({ billId: bill.id, imageUrl: publicUrl }),
       })
       const scanned: ScannedReceipt = await res.json()
 
@@ -115,11 +109,22 @@ export default function BillDetail({
       }
 
       if (scanned.items?.length) {
+        // DB rejects negative prices (used to represent discounts), and a
+        // single bad row fails the whole batch insert — clamp defensively
+        // in case the model still emits one despite the prompt telling it not to
+        const insertItems = scanned.items.map(i => ({ bill_id: bill.id, name: i.name, price: Math.max(0, i.price), quantity: i.quantity }))
+
         // Insert scanned items to DB
-        const { data: newItems } = await supabase
+        const { data: newItems, error: insertError } = await supabase
           .from('bill_items')
-          .insert(scanned.items.map(i => ({ bill_id: bill.id, name: i.name, price: i.price, quantity: i.quantity })))
+          .insert(insertItems)
           .select()
+
+        if (insertError) {
+          console.error('Insert items failed:', insertError)
+          setScanError('Gagal simpan item hasil scan, coba lagi.')
+          return
+        }
 
         if (newItems) {
           // Convert to FullItem type with empty assignments
@@ -209,18 +214,18 @@ export default function BillDetail({
       <div className="flex items-start justify-between gap-3">
         <div>
           <h1 className="font-display text-2xl text-slice-dark">{bill.title}</h1>
-          <p className="text-slice-muted text-sm font-receipt">{bill.date}</p>
+          <p className="text-slice-muted text-sm font-receipt">{bill.date} · {bill.currency}</p>
         </div>
         <div className="text-right">
           <p className="text-slice-text-dim text-xs font-receipt">Total</p>
-          <p className="font-display text-slice-orange text-2xl">{formatIDR(grandTotal)}</p>
+          <p className="font-display text-slice-orange text-2xl">{formatMoney(grandTotal, bill.currency)}</p>
         </div>
       </div>
 
       {/* Member summary cards */}
       <div className="flex gap-2 overflow-x-auto pb-1 -mx-4 px-4">
         {memberTotals.map(m => (
-          <SummaryCard key={m.id} member={m} total={m.total} />
+          <SummaryCard key={m.id} member={m} total={m.total} currency={bill.currency} />
         ))}
       </div>
 
@@ -233,16 +238,6 @@ export default function BillDetail({
             <p className="font-receipt text-slice-muted text-xs">{items.length} item</p>
           </div>
           <div className="flex items-center gap-2">
-            {/* Currency for scanning */}
-            <select
-              value={currency}
-              onChange={e => setCurrency(e.target.value)}
-              disabled={scanning}
-              title="Mata uang di struk"
-              className="bg-white border border-slice-border rounded-xl px-2 py-2 text-xs text-slice-dark focus:outline-none focus:border-slice-orange/60"
-            >
-              {CURRENCIES.map(c => <option key={c} value={c}>{c}</option>)}
-            </select>
             {/* Upload buttons */}
             <button
               onClick={() => cameraRef.current?.click()}
@@ -289,6 +284,7 @@ export default function BillDetail({
                 key={item.id}
                 item={item}
                 members={members}
+                currency={bill.currency}
                 onToggle={(memberId) => toggleAssign(item.id, memberId)}
               />
             ))
@@ -342,7 +338,7 @@ export default function BillDetail({
           <div className="border-t-2 border-dashed border-slice-border px-5 py-4 bg-slice-receipt">
             <div className="flex justify-between items-center font-receipt">
               <span className="text-slice-dark font-bold uppercase tracking-widest text-sm">TOTAL</span>
-              <span className="text-slice-orange font-bold text-xl">{formatIDR(grandTotal)}</span>
+              <span className="text-slice-orange font-bold text-xl">{formatMoney(grandTotal, bill.currency)}</span>
             </div>
           </div>
         )}

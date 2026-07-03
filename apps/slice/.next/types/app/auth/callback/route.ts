@@ -1,8 +1,8 @@
-// File: /Users/dianekapr/Downloads/portfolio/apps/slice/src/app/api/bills/scan-receipt/route.ts
-import * as entry from '../../../../../../src/app/api/bills/scan-receipt/route.js'
+// File: /Users/dianekapr/Downloads/portfolio/apps/slice/src/app/auth/callback/route.ts
+import * as entry from '../../../../../src/app/auth/callback/route.js'
 import type { NextRequest } from 'next/server.js'
 
-type TEntry = typeof import('../../../../../../src/app/api/bills/scan-receipt/route.js')
+type TEntry = typeof import('../../../../../src/app/auth/callback/route.js')
 
 // Check that the entry is a valid entry
 checkFields<Diff<{

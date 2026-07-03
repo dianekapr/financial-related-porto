@@ -9,7 +9,13 @@ export async function POST(req: Request) {
 
   const { billId, imageUrl, currency } = await req.json()
   if (!billId || !imageUrl) return NextResponse.json({ error: 'Missing params' }, { status: 400 })
-  const cur = typeof currency === 'string' && currency.trim() ? currency.trim().toUpperCase() : 'IDR'
+
+  // Currency is chosen once at bill creation and lives on the bill row —
+  // fall back to a client-supplied value only for bills created before the
+  // `currency` column migration ran
+  const { data: billRow } = await supabase.from('bills').select('currency').eq('id', billId).single()
+  const cur = billRow?.currency
+    ?? (typeof currency === 'string' && currency.trim() ? currency.trim().toUpperCase() : 'IDR')
 
   try {
     // Fetch image and convert to base64
@@ -28,28 +34,37 @@ export async function POST(req: Request) {
     const imgBuffer = await imgRes.arrayBuffer()
     const base64 = Buffer.from(imgBuffer).toString('base64')
 
-    const prompt = `Kamu adalah AI yang mengekstrak data dari foto bill apapun bentuknya: struk belanja/restoran, invoice, tagihan listrik/air/internet/pulsa, bill langganan, nota, atau tagihan lainnya.
+    // The model's only job is to READ the numbers exactly as printed — no
+    // arithmetic. Discount/tax/tip reconciliation happens deterministically
+    // below (reconcileScan), which is far more reliable than asking an LLM
+    // to do proportional math and also guarantees the DB's price>=0 constraint
+    const prompt = `Kamu adalah AI yang MEMBACA foto bill apapun bentuknya: struk belanja/restoran, invoice, tagihan listrik/air/internet/pulsa, bill langganan, nota, atau tagihan lainnya.
 Foto bisa saja miring, sedikit blur, kualitas rendah, atau kertas thermal yang pudar — tetap lakukan yang terbaik untuk membaca semua teks dan angka yang ada.
 Mata uang pada bill ini adalah ${cur}.
-Analisis gambar ini dan ekstrak rincian biayanya.
+
+Tugasmu HANYA membaca angka persis seperti tertulis di bill. JANGAN melakukan pengurangan/penjumlahan/perhitungan sendiri — sistem lain yang akan mengolah angkanya.
+
 Kembalikan HANYA JSON valid dengan format berikut, tidak ada teks lain, tidak ada markdown code block:
 
 {
   "title": "Nama toko/penyedia/perusahaan jika terlihat, atau null",
-  "total": total_angka_numerik_atau_null,
   "items": [
-    { "name": "Nama item/biaya", "price": harga_satuan_numerik, "quantity": jumlah_integer }
-  ]
+    { "name": "Nama item/produk", "price": harga_per_unit_seperti_tertulis, "quantity": jumlah_integer }
+  ],
+  "discount": total_potongan_harga_positif_jika_ada_baris_diskon_atau_null,
+  "tax": jumlah_pajak_ppn_positif_jika_ada_baris_terpisah_atau_null,
+  "tip": jumlah_service_charge_tip_positif_jika_ada_baris_terpisah_atau_null,
+  "total": angka_final_yang_dibayar_seperti_tertulis_atau_null
 }
 
 Aturan:
-- Angka harga dikembalikan tanpa simbol mata uang, hanya angka murni (mis. jika mata uang IDR dan tertulis "40.600" itu berarti 40600; jika mata uang USD dan tertulis "40.60" itu berarti 40.6). Sesuaikan pembacaan pemisah ribuan/desimal dengan konvensi mata uang ${cur}. Jangan lakukan konversi ke mata uang lain
-- Jika bill berupa daftar item/produk (struk belanja, restoran, invoice dengan line items), ekstrak tiap item beserta harga dan quantity-nya
-- Jika bill TIDAK punya rincian item (misal tagihan listrik, internet, langganan, atau nota dengan satu jumlah saja), buat satu item mewakili biaya tersebut (misal name: "Tagihan Listrik") dengan price = total dan quantity = 1
-- Jika ada diskon, kurangi langsung dari item terkait atau buat item terpisah dengan harga negatif
+- Baca angka apa adanya sesuai konvensi pemisah ribuan/desimal mata uang ${cur} (mis. untuk IDR, "40.600" berarti 40600; untuk USD, "40.60" berarti 40.6)
+- items HARUS lengkap — cantumkan SEMUA baris produk/item yang tertulis di bill, jangan ada yang terlewat walau ada baris diskon/pajak/tip terpisah
+- "discount"/"tax"/"tip" HANYA diisi kalau ada baris terpisah eksplisit untuk itu di bill (mis. "Diskon", "PPN", "Pajak", "Service Charge", "Tip"). Isi dengan angka POSITIF (jumlahnya), JANGAN pernah negatif
+- Jika bill TIDAK punya rincian item sama sekali (misal tagihan listrik/internet/langganan yang cuma ada satu jumlah), buat SATU item mewakili biaya itu dengan price = total, quantity = 1
 - Jika quantity tidak terlihat, asumsikan 1
 - Gunakan bahasa Indonesia untuk nama item jika memungkinkan
-- Jika gambar sama sekali bukan bill/struk/tagihan/invoice (misal foto random), baru kembalikan: {"title": null, "total": null, "items": []}`
+- Jika gambar sama sekali bukan bill/struk/tagihan/invoice (misal foto random), kembalikan: {"title": null, "items": [], "discount": null, "tax": null, "tip": null, "total": null}`
 
     const sleep = (ms: number) => new Promise(resolve => setTimeout(resolve, ms))
 

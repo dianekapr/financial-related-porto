@@ -5,6 +5,7 @@ import { createClient } from '@portfolio/supabase'
 
 const EMOJIS = ['🧑','👩','👨','🧔','👧','🧒','🎩','🤓','😎','🥸','🤩','😄']
 const COLORS = ['#FF5E1A','#3B82F6','#22C55E','#8B5CF6','#F59E0B','#EC4899','#14B8A6','#EF4444','#6366F1','#84CC16']
+const CURRENCIES = ['IDR', 'USD', 'EUR', 'SGD', 'MYR', 'JPY', 'GBP', 'AUD']
 
 export default function CreateBillModal({ onClose }: { onClose: () => void }) {
   const router = useRouter()
@@ -13,6 +14,7 @@ export default function CreateBillModal({ onClose }: { onClose: () => void }) {
 
   const [title, setTitle] = useState('')
   const [date, setDate] = useState(new Date().toISOString().split('T')[0])
+  const [currency, setCurrency] = useState('IDR')
   const [members, setMembers] = useState([
     { name: '', emoji: '🧑', color: COLORS[0] },
     { name: '', emoji: '👩', color: COLORS[1] },
@@ -41,7 +43,7 @@ export default function CreateBillModal({ onClose }: { onClose: () => void }) {
       // Create bill
       const { data: bill, error } = await supabase
         .from('bills')
-        .insert({ owner_id: session.user.id, title: title.trim(), date, total: 0 })
+        .insert({ owner_id: session.user.id, title: title.trim(), date, total: 0, currency })
         .select()
         .single()
 
@@ -89,15 +91,27 @@ export default function CreateBillModal({ onClose }: { onClose: () => void }) {
             />
           </div>
 
-          {/* Date */}
-          <div>
-            <label className="text-slice-muted text-xs font-receipt uppercase tracking-widest block mb-1.5">Tanggal</label>
-            <input
-              type="date"
-              value={date}
-              onChange={e => setDate(e.target.value)}
-              className="w-full border border-slice-border rounded-xl py-3 px-4 text-sm font-receipt focus:outline-none focus:border-slice-orange/60 bg-slice-surface transition-colors"
-            />
+          {/* Date & currency */}
+          <div className="flex gap-3">
+            <div className="flex-1">
+              <label className="text-slice-muted text-xs font-receipt uppercase tracking-widest block mb-1.5">Tanggal</label>
+              <input
+                type="date"
+                value={date}
+                onChange={e => setDate(e.target.value)}
+                className="w-full border border-slice-border rounded-xl py-3 px-4 text-sm font-receipt focus:outline-none focus:border-slice-orange/60 bg-slice-surface transition-colors"
+              />
+            </div>
+            <div>
+              <label className="text-slice-muted text-xs font-receipt uppercase tracking-widest block mb-1.5">Mata Uang</label>
+              <select
+                value={currency}
+                onChange={e => setCurrency(e.target.value)}
+                className="border border-slice-border rounded-xl py-3 px-3 text-sm font-receipt focus:outline-none focus:border-slice-orange/60 bg-slice-surface transition-colors"
+              >
+                {CURRENCIES.map(c => <option key={c} value={c}>{c}</option>)}
+              </select>
+            </div>
           </div>
 
           {/* Members */}

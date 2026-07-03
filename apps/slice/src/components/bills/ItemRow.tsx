@@ -1,17 +1,15 @@
 'use client'
 import type { BillItem, BillMember, BillItemAssignment } from '@portfolio/supabase'
+import { formatMoney } from '../../lib/money'
 
 type FullItem = BillItem & { assignments: (BillItemAssignment & { member: BillMember | null })[] }
 
-function formatIDR(n: number) {
-  return 'Rp ' + Math.round(n).toLocaleString('id-ID')
-}
-
 export default function ItemRow({
-  item, members, onToggle,
+  item, members, currency, onToggle,
 }: {
   item: FullItem
   members: BillMember[]
+  currency: string
   onToggle: (memberId: string) => void
 }) {
   const assignedIds = item.assignments?.map(a => a.member_id) ?? []
@@ -26,12 +24,12 @@ export default function ItemRow({
           <p className="text-sm font-medium text-slice-dark">{item.name}</p>
           {item.quantity > 1 && (
             <p className="text-slice-muted text-xs font-receipt">
-              {item.quantity}× {formatIDR(item.price)} = {formatIDR(item.price * item.quantity)}
+              {item.quantity}× {formatMoney(item.price, currency)} = {formatMoney(item.price * item.quantity, currency)}
             </p>
           )}
         </div>
         <p className="font-receipt text-sm font-bold text-slice-dark flex-shrink-0">
-          {formatIDR(item.price * item.quantity)}
+          {formatMoney(item.price * item.quantity, currency)}
         </p>
       </div>
 
@@ -51,7 +49,7 @@ export default function ItemRow({
               <span>{m.avatar_emoji}</span>
               <span>{m.name}</span>
               {assigned && perPerson && (
-                <span className="opacity-75 text-[10px]">({formatIDR(perPerson)})</span>
+                <span className="opacity-75 text-[10px]">({formatMoney(perPerson, currency)})</span>
               )}
             </button>
           )

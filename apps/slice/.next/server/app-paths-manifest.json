@@ -1,5 +1,5 @@
 {
+  "/login/page": "app/login/page.js",
   "/bills/page": "app/bills/page.js",
-  "/api/bills/scan-receipt/route": "app/api/bills/scan-receipt/route.js",
   "/bills/[id]/page": "app/bills/[id]/page.js"
 }

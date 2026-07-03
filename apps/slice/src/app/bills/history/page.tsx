@@ -2,10 +2,7 @@ import { createServerSupabaseClient } from '../../../../../../packages/supabase/
 import Link from 'next/link'
 import { format } from 'date-fns'
 import { id as localeId } from 'date-fns/locale'
-
-function formatIDR(n: number) {
-  return 'Rp ' + Math.round(n).toLocaleString('id-ID')
-}
+import { formatMoney } from '../../../lib/money'
 
 export default async function HistoryPage() {
 const supabase = createServerSupabaseClient()  
@@ -25,7 +22,7 @@ const { data: { session } } = await supabase.auth.getSession()
       <div>
         <h1 className="font-display text-3xl text-slice-dark">Riwayat</h1>
         <p className="text-slice-muted text-sm font-receipt mt-0.5">
-          {bills?.length ?? 0} tagihan lunas · Total {formatIDR(totalSplit)} di-split
+          {bills?.length ?? 0} tagihan lunas · Total {formatMoney(totalSplit, 'IDR')} di-split
         </p>
       </div>
 
@@ -49,7 +46,7 @@ const { data: { session } } = await supabase.auth.getSession()
                     {' · '}{bill.members?.length ?? 0} orang
                   </p>
                 </div>
-                <p className="font-display text-slice-muted text-lg">{formatIDR(bill.total)}</p>
+                <p className="font-display text-slice-muted text-lg">{formatMoney(bill.total, bill.currency)}</p>
               </div>
               <div className="flex items-center gap-1 mt-3">
                 {bill.members?.slice(0, 6).map((m: any) => (

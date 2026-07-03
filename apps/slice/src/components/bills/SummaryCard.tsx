@@ -1,10 +1,7 @@
 import type { BillMember } from '@portfolio/supabase'
+import { formatMoney } from '../../lib/money'
 
-function formatIDR(n: number) {
-  return 'Rp\u00A0' + Math.round(n).toLocaleString('id-ID')
-}
-
-export default function SummaryCard({ member, total }: { member: BillMember; total: number }) {
+export default function SummaryCard({ member, total, currency }: { member: BillMember; total: number; currency: string }) {
   return (
     <div
       className="flex-shrink-0 bg-white border-2 rounded-2xl px-4 py-3 min-w-[120px] animate-bounce-in"
@@ -15,7 +12,7 @@ export default function SummaryCard({ member, total }: { member: BillMember; tot
         <p className="text-sm font-medium text-slice-dark truncate max-w-[72px]">{member.name}</p>
       </div>
       <p className="font-display text-lg" style={{ color: member.color }}>
-        {formatIDR(total)}
+        {formatMoney(total, currency)}
       </p>
       {total === 0 && (
         <p className="text-slice-text-dim text-[10px] font-receipt">Belum ada item</p>

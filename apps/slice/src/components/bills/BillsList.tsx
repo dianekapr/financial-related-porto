@@ -5,10 +5,7 @@ import type { Bill, BillMember } from '@portfolio/supabase'
 import { format } from 'date-fns'
 import { id as localeId } from 'date-fns/locale'
 import CreateBillModal from './CreateBillModal'
-
-function formatIDR(n: number) {
-  return 'Rp ' + Math.round(n).toLocaleString('id-ID')
-}
+import { formatMoney } from '../../lib/money'
 
 type BillWithMembers = Bill & { members: BillMember[] }
 
@@ -49,7 +46,7 @@ export default function BillsList({ bills }: { bills: BillWithMembers[] }) {
                   </p>
                 </div>
                 <div className="text-right flex-shrink-0">
-                  <p className="font-display text-slice-orange text-lg">{formatIDR(bill.total)}</p>
+                  <p className="font-display text-slice-orange text-lg">{formatMoney(bill.total, bill.currency)}</p>
                   <p className="text-slice-muted text-xs">{bill.members?.length ?? 0} orang</p>
                 </div>
               </div>

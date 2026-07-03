@@ -3,12 +3,9 @@ import { useTransition } from 'react'
 import { useRouter } from 'next/navigation'
 import { createClient } from '@portfolio/supabase'
 import type { Bill, BillMember } from '@portfolio/supabase'
+import { formatMoney } from '../../lib/money'
 
 type MemberWithTotal = BillMember & { total: number }
-
-function formatIDR(n: number) {
-  return 'Rp ' + Math.round(n).toLocaleString('id-ID')
-}
 
 // Compute minimal transactions to settle debts
 function computeSettlement(members: MemberWithTotal[]) {
@@ -57,7 +54,7 @@ export default function SettleModal({
   const shareToWA = (from: MemberWithTotal, to: MemberWithTotal, amount: number) => {
     const text = encodeURIComponent(
       `Hei ${from.name}! Tagihan "${bill.title}" udah dihitung nih 🧾\n` +
-      `Kamu perlu transfer ${formatIDR(amount)} ke ${to.name} ya!\n\n` +
+      `Kamu perlu transfer ${formatMoney(amount, bill.currency)} ke ${to.name} ya!\n\n` +
       `Dibuat pake SLICE — Split bill app 🍕`
     )
     window.open(`https://wa.me/?text=${text}`, '_blank')
@@ -87,7 +84,7 @@ export default function SettleModal({
                     <span className="text-sm font-medium">{m.name}</span>
                   </div>
                   <span className="font-receipt font-bold text-sm" style={{ color: m.color }}>
-                    {formatIDR(m.total)}
+                    {formatMoney(m.total, bill.currency)}
                   </span>
                 </div>
               ))}
@@ -115,7 +112,7 @@ export default function SettleModal({
                       <span className="font-medium text-sm">{s.to.name}</span>
                     </div>
                     <div className="flex items-center justify-between mt-2">
-                      <p className="font-display text-slice-orange text-xl">{formatIDR(s.amount)}</p>
+                      <p className="font-display text-slice-orange text-xl">{formatMoney(s.amount, bill.currency)}</p>
                       <button
                         onClick={() => shareToWA(s.from, s.to, s.amount)}
                         className="flex items-center gap-1.5 bg-green-500 text-white rounded-xl px-3 py-1.5 text-xs font-medium hover:bg-green-600 transition-all"

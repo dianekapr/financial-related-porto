@@ -2,10 +2,16 @@ import { createServerSupabaseClient } from '../../../../../../../packages/supaba
 import { NextResponse } from 'next/server'
 import type { ScannedReceipt } from '@portfolio/supabase'
 
-// What the model returns: raw numbers as printed, no arithmetic applied
+// What the model returns: raw numbers as printed, no arithmetic applied.
+// `quantity` is intentionally not trusted from the model — asking it to
+// distinguish "unit price" from "line subtotal" (both just look like a
+// number next to a qty on Indonesian receipts) is unreliable even with
+// explicit instructions, and getting it wrong silently doubles the price
+// (price × quantity). We only ever read `price` as the full line subtotal
+// and hardcode quantity=1, which is guaranteed correct regardless.
 interface RawScan {
   title: string | null
-  items: Array<{ name: string; price: number; quantity: number }>
+  items: Array<{ name: string; price: number }>
   discount: number | null
   tax: number | null
   tip: number | null
@@ -26,7 +32,7 @@ function reconcileScan(raw: RawScan): ScannedReceipt {
   const items = (raw.items ?? []).map(i => ({
     name: i.name,
     price: Math.max(0, i.price ?? 0),
-    quantity: Math.max(1, Math.round(i.quantity ?? 1)),
+    quantity: 1,
   }))
 
   if (raw.tax && raw.tax > 0) items.push({ name: 'Pajak/PPN', price: raw.tax, quantity: 1 })
@@ -94,7 +100,7 @@ Kembalikan HANYA JSON valid dengan format berikut, tidak ada teks lain, tidak ad
 {
   "title": "Nama toko/penyedia/perusahaan jika terlihat, atau null",
   "items": [
-    { "name": "Nama item/produk", "price": harga_untuk_baris_ini, "quantity": jumlah_untuk_catatan }
+    { "name": "Nama item/produk", "price": angka_subtotal_baris_ini }
   ],
   "discount": total_potongan_harga_positif_jika_ada_baris_diskon_atau_null,
   "tax": jumlah_pajak_ppn_positif_jika_ada_baris_terpisah_atau_null,
@@ -102,10 +108,9 @@ Kembalikan HANYA JSON valid dengan format berikut, tidak ada teks lain, tidak ad
   "total": angka_final_yang_dibayar_seperti_tertulis_atau_null
 }
 
-Aturan PALING PENTING — price vs quantity (banyak struk Indonesia HANYA punya kolom "qty" dan "subtotal baris", TANPA kolom harga satuan terpisah):
-- "price" = angka SUBTOTAL untuk baris/produk itu seperti tertulis (angka paling kanan di baris tsb, yang sudah mencakup semua unit yang dibeli), BUKAN harga per unit
-- "quantity" default-kan ke 1, KECUALI kamu benar-benar yakin baris itu punya 3 kolom terpisah yang jelas (qty, harga satuan per unit, DAN subtotal baris) — barulah quantity diisi qty asli dan price diisi harga satuan (bukan subtotal)
-- Sistem akan menghitung total baris sebagai price × quantity, jadi kalau ragu, SELALU pakai price=subtotal & quantity=1 supaya tidak salah kali dua
+Aturan PALING PENTING — "price" per item:
+- "price" = angka SUBTOTAL untuk baris/produk itu seperti tertulis (angka paling kanan di baris tsb, yang SUDAH mencakup semua unit yang dibeli di baris itu), BUKAN harga per unit. Jangan bagi atau kalikan apapun — ambil langsung angka yang tertulis di ujung kanan baris tsb
+- Kalau baris itu beli lebih dari 1 unit (ada kolom qty seperti "2" atau "x2"), masukkan info itu ke dalam "name" saja (mis. "Indomie Goreng (2x)"), JANGAN dibuat field terpisah — cukup satu angka "price" yang sudah total untuk baris itu
 
 Aturan lain:
 - Baca angka apa adanya sesuai konvensi pemisah ribuan/desimal mata uang ${cur} (mis. untuk IDR, "40.600" berarti 40600; untuk USD, "40.60" berarti 40.6)

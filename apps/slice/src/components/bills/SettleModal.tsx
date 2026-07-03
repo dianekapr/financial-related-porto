@@ -1,5 +1,5 @@
 'use client'
-import { useTransition } from 'react'
+import { useState, useTransition } from 'react'
 import { useRouter } from 'next/navigation'
 import { createClient } from '@portfolio/supabase'
 import type { Bill, BillMember } from '@portfolio/supabase'
@@ -7,28 +7,12 @@ import { formatMoney } from '../../lib/money'
 
 type MemberWithTotal = BillMember & { total: number }
 
-// Compute minimal transactions to settle debts
-function computeSettlement(members: MemberWithTotal[]) {
-  const average = members.reduce((s, m) => s + m.total, 0) / members.length
-  const balances = members.map(m => ({ ...m, balance: m.total - average }))
-
-  const payers = balances.filter(m => m.balance < -0.01).sort((a, b) => a.balance - b.balance)
-  const receivers = balances.filter(m => m.balance > 0.01).sort((a, b) => b.balance - a.balance)
-
-  const transactions: { from: MemberWithTotal; to: MemberWithTotal; amount: number }[] = []
-  let i = 0, j = 0
-  const pay = [...payers], rec = [...receivers]
-
-  while (i < pay.length && j < rec.length) {
-    const amount = Math.min(-pay[i].balance, rec[j].balance)
-    transactions.push({ from: pay[i], to: rec[j], amount })
-    pay[i].balance += amount
-    rec[j].balance -= amount
-    if (Math.abs(pay[i].balance) < 0.01) i++
-    if (Math.abs(rec[j].balance) < 0.01) j++
-  }
-
-  return transactions
+// One person fronted the whole bill — everyone else pays back exactly
+// what they ordered (their `total`), directly to the payer.
+function computeSettlement(members: MemberWithTotal[], payerId: string) {
+  return members
+    .filter(m => m.id !== payerId && m.total > 0.01)
+    .map(m => ({ from: m, amount: m.total }))
 }
 
 export default function SettleModal({
@@ -41,7 +25,11 @@ export default function SettleModal({
   const router = useRouter()
   const supabase = createClient()
   const [isPending, startTransition] = useTransition()
-  const settlements = computeSettlement(members)
+  const [payerId, setPayerId] = useState(
+    members.find(m => m.user_id === bill.owner_id)?.id ?? members[0]?.id ?? ''
+  )
+  const payer = members.find(m => m.id === payerId)
+  const settlements = payer ? computeSettlement(members, payerId) : []
 
   const handleSettle = async () => {
     startTransition(async () => {
@@ -51,10 +39,11 @@ export default function SettleModal({
     })
   }
 
-  const shareToWA = (from: MemberWithTotal, to: MemberWithTotal, amount: number) => {
+  const shareToWA = (from: MemberWithTotal, amount: number) => {
+    if (!payer) return
     const text = encodeURIComponent(
       `Hei ${from.name}! Tagihan "${bill.title}" udah dihitung nih 🧾\n` +
-      `Kamu perlu transfer ${formatMoney(amount, bill.currency)} ke ${to.name} ya!\n\n` +
+      `Kamu perlu transfer ${formatMoney(amount, bill.currency)} ke ${payer.name} ya!\n\n` +
       `Dibuat pake SLICE — Split bill app 🍕`
     )
     window.open(`https://wa.me/?text=${text}`, '_blank')
@@ -73,6 +62,22 @@ export default function SettleModal({
         </div>
 
         <div className="p-6 space-y-4 max-h-[60vh] overflow-y-auto">
+          {/* Who paid upfront */}
+          <div>
+            <label className="text-slice-muted text-xs font-receipt uppercase tracking-widest block mb-1.5">
+              Siapa yang bayar duluan?
+            </label>
+            <select
+              value={payerId}
+              onChange={e => setPayerId(e.target.value)}
+              className="w-full border border-slice-border rounded-xl py-2.5 px-3 text-sm focus:outline-none focus:border-slice-orange/60 bg-slice-surface"
+            >
+              {members.map(m => (
+                <option key={m.id} value={m.id}>{m.avatar_emoji} {m.name}</option>
+              ))}
+            </select>
+          </div>
+
           {/* Per person breakdown */}
           <div>
             <p className="text-slice-muted text-xs font-receipt uppercase tracking-widest mb-3">Rincian per orang</p>
@@ -82,6 +87,9 @@ export default function SettleModal({
                   <div className="flex items-center gap-2">
                     <span className="text-lg">{m.avatar_emoji}</span>
                     <span className="text-sm font-medium">{m.name}</span>
+                    {m.id === payerId && (
+                      <span className="text-[10px] text-green-600 bg-green-50 border border-green-200 rounded-full px-1.5 py-0.5">bayar duluan</span>
+                    )}
                   </div>
                   <span className="font-receipt font-bold text-sm" style={{ color: m.color }}>
                     {formatMoney(m.total, bill.currency)}
@@ -96,9 +104,13 @@ export default function SettleModal({
           {/* Settlement transactions */}
           <div>
             <p className="text-slice-muted text-xs font-receipt uppercase tracking-widest mb-3">Transfer yang perlu dilakukan</p>
-            {settlements.length === 0 ? (
+            {!payer ? (
               <p className="text-slice-muted text-sm font-receipt text-center py-4">
-                Semua bayar sama rata! 🎉
+                Pilih siapa yang bayar duluan dulu.
+              </p>
+            ) : settlements.length === 0 ? (
+              <p className="text-slice-muted text-sm font-receipt text-center py-4">
+                Ga ada yang perlu transfer! 🎉
               </p>
             ) : (
               <div className="space-y-3">
@@ -108,13 +120,13 @@ export default function SettleModal({
                       <span className="text-xl">{s.from.avatar_emoji}</span>
                       <span className="font-medium text-sm">{s.from.name}</span>
                       <span className="text-slice-muted text-sm font-receipt">transfer ke</span>
-                      <span className="text-xl">{s.to.avatar_emoji}</span>
-                      <span className="font-medium text-sm">{s.to.name}</span>
+                      <span className="text-xl">{payer.avatar_emoji}</span>
+                      <span className="font-medium text-sm">{payer.name}</span>
                     </div>
                     <div className="flex items-center justify-between mt-2">
                       <p className="font-display text-slice-orange text-xl">{formatMoney(s.amount, bill.currency)}</p>
                       <button
-                        onClick={() => shareToWA(s.from, s.to, s.amount)}
+                        onClick={() => shareToWA(s.from, s.amount)}
                         className="flex items-center gap-1.5 bg-green-500 text-white rounded-xl px-3 py-1.5 text-xs font-medium hover:bg-green-600 transition-all"
                       >
                         <span>📲</span> WA {s.from.name}

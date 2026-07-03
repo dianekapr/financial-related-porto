@@ -358,6 +358,7 @@ export default function BillDetail({
         <SettleModal
           bill={bill}
           members={memberTotals}
+          items={items}
           onClose={() => setShowSettle(false)}
         />
       )}

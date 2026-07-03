@@ -62,6 +62,7 @@ export default function BillDetail({
   })
 
   const grandTotal = items.reduce((s, item) => s + item.price * item.quantity, 0)
+  const isSettled = bill.is_settled
 
   // Upload & scan receipt
   const handleUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -213,7 +214,12 @@ export default function BillDetail({
       {/* Bill header */}
       <div className="flex items-start justify-between gap-3">
         <div>
-          <h1 className="font-display text-2xl text-slice-dark">{bill.title}</h1>
+          <div className="flex items-center gap-2">
+            <h1 className="font-display text-2xl text-slice-dark">{bill.title}</h1>
+            {isSettled && (
+              <span className="text-green-600 text-xs font-medium bg-green-50 border border-green-200 rounded-full px-2 py-0.5">✓ Lunas</span>
+            )}
+          </div>
           <p className="text-slice-muted text-sm font-receipt">{bill.date} · {bill.currency}</p>
         </div>
         <div className="text-right">
@@ -237,31 +243,37 @@ export default function BillDetail({
             <p className="font-receipt text-slice-dark font-bold text-sm uppercase tracking-widest">STRUK / ITEMS</p>
             <p className="font-receipt text-slice-muted text-xs">{items.length} item</p>
           </div>
-          <div className="flex items-center gap-2">
-            {/* Upload buttons */}
-            <button
-              onClick={() => cameraRef.current?.click()}
-              disabled={scanning}
-              className="flex items-center gap-1.5 bg-white border border-slice-border rounded-xl px-3 py-2 text-sm text-slice-dark hover:border-slice-orange/40 transition-all text-xs font-medium disabled:opacity-60"
-            >
-              {scanning ? '🔍 Scanning...' : '📷 Kamera'}
-            </button>
-            <button
-              onClick={() => galleryRef.current?.click()}
-              disabled={scanning}
-              className="flex items-center gap-1.5 bg-white border border-slice-border rounded-xl px-3 py-2 text-sm text-slice-dark hover:border-slice-orange/40 transition-all text-xs font-medium disabled:opacity-60"
-            >
-              {scanning ? '🔍 Scanning...' : '🖼️ Galeri'}
-            </button>
-            <button
-              onClick={() => setShowAddItem(true)}
-              className="flex items-center gap-1 bg-slice-orange text-white rounded-xl px-3 py-2 text-xs font-medium hover:bg-slice-orange-light transition-all"
-            >
-              + Item
-            </button>
-          </div>
-          <input ref={cameraRef} type="file" accept="image/*" capture="environment" className="hidden" onChange={handleUpload} />
-          <input ref={galleryRef} type="file" accept="image/*" className="hidden" onChange={handleUpload} />
+          {!isSettled && (
+            <div className="flex items-center gap-2">
+              {/* Upload buttons */}
+              <button
+                onClick={() => cameraRef.current?.click()}
+                disabled={scanning}
+                className="flex items-center gap-1.5 bg-white border border-slice-border rounded-xl px-3 py-2 text-sm text-slice-dark hover:border-slice-orange/40 transition-all text-xs font-medium disabled:opacity-60"
+              >
+                {scanning ? '🔍 Scanning...' : '📷 Kamera'}
+              </button>
+              <button
+                onClick={() => galleryRef.current?.click()}
+                disabled={scanning}
+                className="flex items-center gap-1.5 bg-white border border-slice-border rounded-xl px-3 py-2 text-sm text-slice-dark hover:border-slice-orange/40 transition-all text-xs font-medium disabled:opacity-60"
+              >
+                {scanning ? '🔍 Scanning...' : '🖼️ Galeri'}
+              </button>
+              <button
+                onClick={() => setShowAddItem(true)}
+                className="flex items-center gap-1 bg-slice-orange text-white rounded-xl px-3 py-2 text-xs font-medium hover:bg-slice-orange-light transition-all"
+              >
+                + Item
+              </button>
+            </div>
+          )}
+          {!isSettled && (
+            <>
+              <input ref={cameraRef} type="file" accept="image/*" capture="environment" className="hidden" onChange={handleUpload} />
+              <input ref={galleryRef} type="file" accept="image/*" className="hidden" onChange={handleUpload} />
+            </>
+          )}
         </div>
 
         {scanError && (
@@ -285,6 +297,7 @@ export default function BillDetail({
                 item={item}
                 members={members}
                 currency={bill.currency}
+                readOnly={isSettled}
                 onToggle={(memberId) => toggleAssign(item.id, memberId)}
               />
             ))
@@ -292,7 +305,7 @@ export default function BillDetail({
         </div>
 
         {/* Add item form */}
-        {showAddItem && (
+        {!isSettled && showAddItem && (
           <div className="border-t border-slice-border p-4 bg-slice-surface space-y-3">
             <p className="font-receipt text-slice-dark text-xs uppercase tracking-widest font-bold">Tambah Item Manual</p>
             <div className="flex gap-2">
@@ -345,7 +358,7 @@ export default function BillDetail({
       </div>
 
       {/* Settle button */}
-      {items.length > 0 && (
+      {!isSettled && items.length > 0 && (
         <button
           onClick={() => setShowSettle(true)}
           className="w-full bg-slice-dark text-white rounded-2xl py-4 font-display text-xl hover:bg-gray-800 active:scale-[0.98] transition-all shadow-md"

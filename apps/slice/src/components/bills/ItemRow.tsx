@@ -5,17 +5,19 @@ import { formatMoney } from '../../lib/money'
 type FullItem = BillItem & { assignments: (BillItemAssignment & { member: BillMember | null })[] }
 
 export default function ItemRow({
-  item, members, currency, onToggle,
+  item, members, currency, readOnly, onToggle,
 }: {
   item: FullItem
   members: BillMember[]
   currency: string
+  readOnly?: boolean
   onToggle: (memberId: string) => void
 }) {
   const assignedIds = item.assignments?.map(a => a.member_id) ?? []
   const perPerson = assignedIds.length > 0
     ? (item.price * item.quantity) / assignedIds.length
     : null
+  const visibleMembers = readOnly ? members.filter(m => assignedIds.includes(m.id)) : members
 
   return (
     <div className="px-5 py-3.5">
@@ -35,13 +37,14 @@ export default function ItemRow({
 
       {/* Member assignment toggles */}
       <div className="flex flex-wrap gap-1.5">
-        {members.map(m => {
+        {visibleMembers.map(m => {
           const assigned = assignedIds.includes(m.id)
+          const Tag = readOnly ? 'span' : 'button'
           return (
-            <button
+            <Tag
               key={m.id}
-              onClick={() => onToggle(m.id)}
-              className={`member-pill transition-all active:scale-95 ${
+              onClick={readOnly ? undefined : () => onToggle(m.id)}
+              className={`member-pill ${readOnly ? '' : 'transition-all active:scale-95'} ${
                 assigned ? 'text-white shadow-sm' : 'bg-slate-100 text-slice-muted hover:bg-slate-200'
               }`}
               style={assigned ? { backgroundColor: m.color } : {}}
@@ -51,7 +54,7 @@ export default function ItemRow({
               {assigned && perPerson && (
                 <span className="opacity-75 text-[10px]">({formatMoney(perPerson, currency)})</span>
               )}
-            </button>
+            </Tag>
           )
         })}
         {assignedIds.length === 0 && (

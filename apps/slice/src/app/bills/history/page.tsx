@@ -34,7 +34,11 @@ const { data: { session } } = await supabase.auth.getSession()
       ) : (
         <div className="space-y-3">
           {bills.map(bill => (
-            <div key={bill.id} className="bg-white border border-slice-border rounded-2xl p-4 opacity-80">
+            <Link
+              key={bill.id}
+              href={`/bills/${bill.id}`}
+              className="block bg-white border border-slice-border rounded-2xl p-4 opacity-80 hover:opacity-100 hover:border-slice-orange/40 hover:shadow-md transition-all"
+            >
               <div className="flex items-start justify-between gap-3">
                 <div>
                   <div className="flex items-center gap-2">
@@ -56,7 +60,7 @@ const { data: { session } } = await supabase.auth.getSession()
                   </div>
                 ))}
               </div>
-            </div>
+            </Link>
           ))}
         </div>
       )}

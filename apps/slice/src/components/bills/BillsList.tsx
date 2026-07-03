@@ -1,6 +1,8 @@
 'use client'
 import { useState } from 'react'
 import Link from 'next/link'
+import { useRouter } from 'next/navigation'
+import { createClient } from '@portfolio/supabase'
 import type { Bill, BillMember } from '@portfolio/supabase'
 import { format } from 'date-fns'
 import { id as localeId } from 'date-fns/locale'
@@ -10,7 +12,26 @@ import { formatMoney } from '../../lib/money'
 type BillWithMembers = Bill & { members: BillMember[] }
 
 export default function BillsList({ bills }: { bills: BillWithMembers[] }) {
+  const router = useRouter()
+  const supabase = createClient()
   const [showCreate, setShowCreate] = useState(false)
+  const [deletingId, setDeletingId] = useState<string | null>(null)
+
+  const handleDelete = async (e: React.MouseEvent, bill: BillWithMembers) => {
+    e.preventDefault()
+    e.stopPropagation()
+    if (!window.confirm(`Hapus tagihan "${bill.title}"? Semua item & pembagian di dalamnya ikut terhapus, ga bisa di-undo.`)) return
+
+    setDeletingId(bill.id)
+    const { error } = await supabase.from('bills').delete().eq('id', bill.id)
+    setDeletingId(null)
+    if (error) {
+      console.error('Delete bill failed:', error)
+      window.alert('Gagal hapus tagihan, coba lagi.')
+      return
+    }
+    router.refresh()
+  }
 
   return (
     <div className="space-y-4">
@@ -32,46 +53,59 @@ export default function BillsList({ bills }: { bills: BillWithMembers[] }) {
       ) : (
         <div className="space-y-3">
           {bills.map((bill, i) => (
-            <Link
+            <div
               key={bill.id}
-              href={`/bills/${bill.id}`}
-              className="block bg-white border border-slice-border rounded-2xl p-4 hover:border-slice-orange/40 hover:shadow-md transition-all animate-fade-up active:scale-[0.99]"
+              className="relative animate-fade-up"
               style={{ animationDelay: `${i * 50}ms`, animationFillMode: 'backwards' }}
             >
-              <div className="flex items-start justify-between gap-3">
-                <div className="flex-1 min-w-0">
-                  <h3 className="font-display text-lg text-slice-dark truncate">{bill.title}</h3>
-                  <p className="text-slice-muted text-xs font-receipt mt-0.5">
-                    {format(new Date(bill.date), 'd MMM yyyy', { locale: localeId })}
-                  </p>
+              <Link
+                href={`/bills/${bill.id}`}
+                className="block bg-white border border-slice-border rounded-2xl p-4 pr-11 hover:border-slice-orange/40 hover:shadow-md transition-all active:scale-[0.99]"
+              >
+                <div className="flex items-start justify-between gap-3">
+                  <div className="flex-1 min-w-0">
+                    <h3 className="font-display text-lg text-slice-dark truncate">{bill.title}</h3>
+                    <p className="text-slice-muted text-xs font-receipt mt-0.5">
+                      {format(new Date(bill.date), 'd MMM yyyy', { locale: localeId })}
+                    </p>
+                  </div>
+                  <div className="text-right flex-shrink-0">
+                    <p className="font-display text-slice-orange text-lg">{formatMoney(bill.total, bill.currency)}</p>
+                    <p className="text-slice-muted text-xs">{bill.members?.length ?? 0} orang</p>
+                  </div>
                 </div>
-                <div className="text-right flex-shrink-0">
-                  <p className="font-display text-slice-orange text-lg">{formatMoney(bill.total, bill.currency)}</p>
-                  <p className="text-slice-muted text-xs">{bill.members?.length ?? 0} orang</p>
-                </div>
-              </div>
 
-              {/* Member avatars */}
-              {bill.members && bill.members.length > 0 && (
-                <div className="flex items-center gap-1 mt-3">
-                  {bill.members.slice(0, 6).map(m => (
-                    <div
-                      key={m.id}
-                      title={m.name}
-                      className="w-7 h-7 rounded-full flex items-center justify-center text-sm border-2 border-white -ml-1 first:ml-0"
-                      style={{ backgroundColor: `${m.color}30`, borderColor: m.color }}
-                    >
-                      {m.avatar_emoji}
-                    </div>
-                  ))}
-                  {bill.members.length > 6 && (
-                    <div className="w-7 h-7 rounded-full bg-slice-border flex items-center justify-center text-xs text-slice-muted -ml-1">
-                      +{bill.members.length - 6}
-                    </div>
-                  )}
-                </div>
-              )}
-            </Link>
+                {/* Member avatars */}
+                {bill.members && bill.members.length > 0 && (
+                  <div className="flex items-center gap-1 mt-3">
+                    {bill.members.slice(0, 6).map(m => (
+                      <div
+                        key={m.id}
+                        title={m.name}
+                        className="w-7 h-7 rounded-full flex items-center justify-center text-sm border-2 border-white -ml-1 first:ml-0"
+                        style={{ backgroundColor: `${m.color}30`, borderColor: m.color }}
+                      >
+                        {m.avatar_emoji}
+                      </div>
+                    ))}
+                    {bill.members.length > 6 && (
+                      <div className="w-7 h-7 rounded-full bg-slice-border flex items-center justify-center text-xs text-slice-muted -ml-1">
+                        +{bill.members.length - 6}
+                      </div>
+                    )}
+                  </div>
+                )}
+              </Link>
+
+              <button
+                onClick={e => handleDelete(e, bill)}
+                disabled={deletingId === bill.id}
+                title="Hapus tagihan"
+                className="absolute top-4 right-4 w-7 h-7 flex items-center justify-center rounded-full text-slice-text-dim hover:text-red-500 hover:bg-red-50 transition-colors disabled:opacity-50"
+              >
+                {deletingId === bill.id ? '⏳' : '🗑️'}
+              </button>
+            </div>
           ))}
         </div>
       )}

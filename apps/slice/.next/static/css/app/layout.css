@@ -455,8 +455,14 @@ video {
 .inset-0{
   inset: 0px;
 }
+.right-4{
+  right: 1rem;
+}
 .top-0{
   top: 0px;
+}
+.top-4{
+  top: 1rem;
 }
 .z-40{
   z-index: 40;
@@ -921,6 +927,9 @@ video {
 .pb-8{
   padding-bottom: 2rem;
 }
+.pr-11{
+  padding-right: 2.75rem;
+}
 .pt-6{
   padding-top: 1.5rem;
 }
@@ -1195,6 +1204,11 @@ html, body {
   background-color: rgb(22 163 74 / var(--tw-bg-opacity, 1));
 }
 
+.hover\:bg-red-50:hover{
+  --tw-bg-opacity: 1;
+  background-color: rgb(254 242 242 / var(--tw-bg-opacity, 1));
+}
+
 .hover\:bg-slate-200:hover{
   --tw-bg-opacity: 1;
   background-color: rgb(226 232 240 / var(--tw-bg-opacity, 1));
@@ -1233,6 +1247,10 @@ html, body {
 .hover\:text-slice-orange:hover{
   --tw-text-opacity: 1;
   color: rgb(255 94 26 / var(--tw-text-opacity, 1));
+}
+
+.hover\:opacity-100:hover{
+  opacity: 1;
 }
 
 .hover\:shadow-md:hover{

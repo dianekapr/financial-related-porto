@@ -194,14 +194,24 @@ export default function SettleModal({
         return
       }
     } catch (err) {
-      if ((err as Error)?.name === 'AbortError') return // user cancelled the share sheet
-      console.error('Share with image failed, falling back to text-only:', err)
+      // Falls through to the wa.me fallback below even on cancel/AbortError —
+      // the share sheet only lists apps actually installed, so on a device
+      // without the WhatsApp app it won't appear as an option at all and
+      // the user has no real choice but to back out. Landing them on wa.me
+      // (opens the WhatsApp app if installed, WhatsApp Web otherwise) beats
+      // a silent dead end; the cost of an extra tab if they truly meant to
+      // cancel is minor.
+      if ((err as Error)?.name !== 'AbortError') {
+        console.error('Share with image failed, falling back to text-only:', err)
+      }
     } finally {
       setSharingId(null)
     }
 
-    // Fallback for browsers without file-sharing support (most desktops):
-    // text-only wa.me link, same as before
+    // Fallback: text-only wa.me link (no image — WhatsApp has no URL param
+    // for attaching files). Also where we land after the share-sheet path
+    // above didn't go through, so users without the app installed still
+    // get to WhatsApp/WhatsApp Web with the message pre-filled.
     window.open(`https://wa.me/?text=${encodeURIComponent(text)}`, '_blank')
   }
 

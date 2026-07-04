@@ -1,12 +1,10 @@
-import { createServerSupabaseClient } from '@portfolio/supabase'
-import { cookies } from 'next/headers'
+import { createServerSupabaseClient } from '../../../../../packages/supabase/src/server'
 import { redirect } from 'next/navigation'
 import Sidebar from '@/components/Sidebar'
 import MobileNav from '@/components/MobileNav'
 
 export default async function DashboardLayout({ children }: { children: React.ReactNode }) {
-  const cookieStore = cookies()
-  const supabase = createServerSupabaseClient(cookieStore)
+  const supabase = createServerSupabaseClient()
   const { data: { session } } = await supabase.auth.getSession()
 
   if (!session) redirect('/login')

@@ -1,11 +1,9 @@
-import { createServerSupabaseClient } from '@portfolio/supabase'
-import { cookies } from 'next/headers'
+import { createServerSupabaseClient } from '../../../../../../packages/supabase/src/server'
 import { NextResponse } from 'next/server'
 
 export async function GET(req: Request) {
   const { searchParams } = new URL(req.url)
-  const cookieStore = cookies()
-  const supabase = createServerSupabaseClient(cookieStore)
+  const supabase = createServerSupabaseClient()
   const { data: { session } } = await supabase.auth.getSession()
   if (!session) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 
@@ -32,8 +30,7 @@ export async function GET(req: Request) {
 }
 
 export async function POST(req: Request) {
-  const cookieStore = cookies()
-  const supabase = createServerSupabaseClient(cookieStore)
+  const supabase = createServerSupabaseClient()
   const { data: { session } } = await supabase.auth.getSession()
   if (!session) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 
@@ -53,8 +50,7 @@ export async function DELETE(req: Request) {
   const id = searchParams.get('id')
   if (!id) return NextResponse.json({ error: 'ID required' }, { status: 400 })
 
-  const cookieStore = cookies()
-  const supabase = createServerSupabaseClient(cookieStore)
+  const supabase = createServerSupabaseClient()
   const { data: { session } } = await supabase.auth.getSession()
   if (!session) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 

@@ -1,5 +1,4 @@
-import { createServerSupabaseClient } from '@portfolio/supabase'
-import { cookies } from 'next/headers'
+import { createServerSupabaseClient } from '../../../../../../packages/supabase/src/server'
 import TransactionList from '@/components/transactions/TransactionList'
 import { format } from 'date-fns'
 
@@ -8,8 +7,7 @@ export default async function TransactionsPage({
 }: {
   searchParams: { month?: string; year?: string; type?: string }
 }) {
-  const cookieStore = cookies()
-  const supabase = createServerSupabaseClient(cookieStore)
+  const supabase = createServerSupabaseClient()
   const { data: { session } } = await supabase.auth.getSession()
 
   const now = new Date()

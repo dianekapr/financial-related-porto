@@ -1,5 +1,4 @@
-import { createServerSupabaseClient } from '@portfolio/supabase'
-import { cookies } from 'next/headers'
+import { createServerSupabaseClient } from '../../../../../packages/supabase/src/server'
 import { format } from 'date-fns'
 import { id as localeId } from 'date-fns/locale'
 import SummaryCards from '@/components/dashboard/SummaryCards'
@@ -8,8 +7,7 @@ import BudgetGauge from '@/components/dashboard/BudgetGauge'
 import MonthlyChart from '@/components/dashboard/MonthlyChart'
 
 export default async function DashboardPage() {
-  const cookieStore = cookies()
-  const supabase = createServerSupabaseClient(cookieStore)
+  const supabase = createServerSupabaseClient()
   const { data: { session } } = await supabase.auth.getSession()
 
   const now = new Date()

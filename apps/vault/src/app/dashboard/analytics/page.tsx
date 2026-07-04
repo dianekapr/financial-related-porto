@@ -1,10 +1,8 @@
-import { createServerSupabaseClient } from '@portfolio/supabase'
-import { cookies } from 'next/headers'
+import { createServerSupabaseClient } from '../../../../../../packages/supabase/src/server'
 import AnalyticsCharts from '@/components/analytics/AnalyticsCharts'
 
 export default async function AnalyticsPage() {
-  const cookieStore = cookies()
-  const supabase = createServerSupabaseClient(cookieStore)
+  const supabase = createServerSupabaseClient()
   const { data: { session } } = await supabase.auth.getSession()
 
   // Last 12 months

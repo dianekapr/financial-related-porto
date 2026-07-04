@@ -1,11 +1,12 @@
 'use client'
+import { useMemo, useState } from 'react'
 import {
   PieChart, Pie, Cell, Tooltip as RTooltip, ResponsiveContainer,
   LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend,
 } from 'recharts'
-import { format, subMonths, startOfMonth, endOfMonth } from 'date-fns'
+import { format, subMonths, startOfMonth, endOfMonth, startOfYear } from 'date-fns'
 import { id as localeId } from 'date-fns/locale'
-import type { Transaction } from '@portfolio/supabase'
+import type { Transaction, Wallet } from '@portfolio/supabase'
 import { formatIDR } from '../../lib/money'
 
 function formatShort(n: number) {
@@ -14,19 +15,54 @@ function formatShort(n: number) {
   return String(n)
 }
 
-export default function AnalyticsCharts({ transactions }: { transactions: Transaction[] }) {
+const RANGES = [
+  { value: 'month', label: 'Bulan Ini' },
+  { value: '3m', label: '3 Bulan Terakhir' },
+  { value: '6m', label: '6 Bulan Terakhir' },
+  { value: 'year', label: 'Tahun Ini' },
+  { value: 'all', label: 'Semua Waktu' },
+  { value: 'custom', label: 'Rentang Custom' },
+] as const
+
+function rangeToDates(range: string, now: Date): { start: Date | null; end: Date | null } {
+  switch (range) {
+    case 'month': return { start: startOfMonth(now), end: endOfMonth(now) }
+    case '3m': return { start: startOfMonth(subMonths(now, 2)), end: endOfMonth(now) }
+    case '6m': return { start: startOfMonth(subMonths(now, 5)), end: endOfMonth(now) }
+    case 'year': return { start: startOfYear(now), end: endOfMonth(now) }
+    default: return { start: null, end: null }
+  }
+}
+
+export default function AnalyticsCharts({ transactions, wallets }: { transactions: Transaction[]; wallets: Wallet[] }) {
   const now = new Date()
 
-  // Category breakdown (expenses only, current month)
-  const currentMonth = now.getMonth() + 1
-  const currentYear = now.getFullYear()
-  const currentExpenses = transactions.filter(t => {
-    const d = new Date(t.date)
-    return t.type === 'expense' && d.getMonth() + 1 === currentMonth && d.getFullYear() === currentYear
-  })
+  const [walletFilter, setWalletFilter] = useState('all')
+  const [range, setRange] = useState<typeof RANGES[number]['value']>('month')
+  const [customStart, setCustomStart] = useState(format(startOfMonth(now), 'yyyy-MM-dd'))
+  const [customEnd, setCustomEnd] = useState(format(now, 'yyyy-MM-dd'))
+
+  const walletFiltered = useMemo(
+    () => walletFilter === 'all' ? transactions : transactions.filter(t => t.wallet_id === walletFilter),
+    [transactions, walletFilter]
+  )
+
+  const filtered = useMemo(() => {
+    if (range === 'all') return walletFiltered
+    const { start, end } = range === 'custom'
+      ? { start: new Date(customStart), end: new Date(customEnd) }
+      : rangeToDates(range, now)
+    if (!start || !end) return walletFiltered
+    return walletFiltered.filter(t => {
+      const d = new Date(t.date)
+      return d >= start && d <= end
+    })
+  }, [walletFiltered, range, customStart, customEnd])
+
+  const expenses = filtered.filter(t => t.type === 'expense')
 
   const categoryMap: Record<string, { amount: number; icon: string; color: string }> = {}
-  for (const tx of currentExpenses) {
+  for (const tx of expenses) {
     const key = tx.category?.name ?? 'Lainnya'
     if (!categoryMap[key]) categoryMap[key] = { amount: 0, icon: tx.category?.icon ?? '📌', color: tx.category?.color ?? '#888' }
     categoryMap[key].amount += tx.amount
@@ -35,12 +71,15 @@ export default function AnalyticsCharts({ transactions }: { transactions: Transa
     .map(([name, d]) => ({ name, ...d }))
     .sort((a, b) => b.amount - a.amount)
 
-  // Monthly trend (last 6 months)
+  const totalExpense = expenses.reduce((s, t) => s + t.amount, 0)
+
+  // Monthly trend (last 6 months) — respects the wallet filter, but stays
+  // on its own fixed window since it's inherently a month-over-month view
   const trendData = Array.from({ length: 6 }, (_, i) => {
     const d = subMonths(now, 5 - i)
     const start = startOfMonth(d)
     const end = endOfMonth(d)
-    const txs = transactions.filter(t => {
+    const txs = walletFiltered.filter(t => {
       const td = new Date(t.date)
       return td >= start && td <= end
     })
@@ -51,19 +90,8 @@ export default function AnalyticsCharts({ transactions }: { transactions: Transa
     }
   })
 
-  // Top spending categories (all time)
-  const allCatMap: Record<string, { amount: number; icon: string; color: string }> = {}
-  for (const tx of transactions.filter(t => t.type === 'expense')) {
-    const key = tx.category?.name ?? 'Lainnya'
-    if (!allCatMap[key]) allCatMap[key] = { amount: 0, icon: tx.category?.icon ?? '📌', color: tx.category?.color ?? '#888' }
-    allCatMap[key].amount += tx.amount
-  }
-  const topCats = Object.entries(allCatMap)
-    .map(([name, d]) => ({ name, ...d }))
-    .sort((a, b) => b.amount - a.amount)
-    .slice(0, 5)
-
-  const totalExpense = currentExpenses.reduce((s, t) => s + t.amount, 0)
+  const rangeLabel = RANGES.find(r => r.value === range)?.label ?? ''
+  const walletLabel = walletFilter === 'all' ? 'Semua Wallet' : wallets.find(w => w.id === walletFilter)?.name ?? ''
 
   const CustomPieTooltip = ({ active, payload }: any) => {
     if (!active || !payload?.length) return null
@@ -79,13 +107,60 @@ export default function AnalyticsCharts({ transactions }: { transactions: Transa
 
   return (
     <div className="space-y-6">
+      {/* Filters */}
+      <div className="bg-vault-card border border-vault-border rounded-2xl p-4 flex flex-wrap items-center gap-3">
+        <div>
+          <label className="text-vault-text-dim text-[10px] font-mono uppercase tracking-widest block mb-1">Wallet</label>
+          <select
+            value={walletFilter}
+            onChange={e => setWalletFilter(e.target.value)}
+            className="bg-vault-surface border border-vault-border rounded-lg px-3 py-2 text-sm font-mono text-vault-text focus:outline-none focus:border-vault-gold/50"
+          >
+            <option value="all">Semua Wallet</option>
+            {wallets.map(w => <option key={w.id} value={w.id}>{w.name}</option>)}
+          </select>
+        </div>
+        <div>
+          <label className="text-vault-text-dim text-[10px] font-mono uppercase tracking-widest block mb-1">Rentang Waktu</label>
+          <select
+            value={range}
+            onChange={e => setRange(e.target.value as typeof range)}
+            className="bg-vault-surface border border-vault-border rounded-lg px-3 py-2 text-sm font-mono text-vault-text focus:outline-none focus:border-vault-gold/50"
+          >
+            {RANGES.map(r => <option key={r.value} value={r.value}>{r.label}</option>)}
+          </select>
+        </div>
+        {range === 'custom' && (
+          <div className="flex items-end gap-2">
+            <div>
+              <label className="text-vault-text-dim text-[10px] font-mono uppercase tracking-widest block mb-1">Dari</label>
+              <input
+                type="date"
+                value={customStart}
+                onChange={e => setCustomStart(e.target.value)}
+                className="bg-vault-surface border border-vault-border rounded-lg px-3 py-2 text-sm font-mono text-vault-text focus:outline-none focus:border-vault-gold/50"
+              />
+            </div>
+            <div>
+              <label className="text-vault-text-dim text-[10px] font-mono uppercase tracking-widest block mb-1">Sampai</label>
+              <input
+                type="date"
+                value={customEnd}
+                onChange={e => setCustomEnd(e.target.value)}
+                className="bg-vault-surface border border-vault-border rounded-lg px-3 py-2 text-sm font-mono text-vault-text focus:outline-none focus:border-vault-gold/50"
+              />
+            </div>
+          </div>
+        )}
+      </div>
+
       {/* Top row: Pie + Top categories */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         {/* Donut chart */}
         <div className="bg-vault-card border border-vault-border rounded-2xl p-5">
-          <p className="font-display text-vault-gold tracking-widest text-lg mb-1">KATEGORI BULAN INI</p>
+          <p className="font-display text-vault-gold tracking-widest text-lg mb-1">KATEGORI</p>
           <p className="text-vault-text-dim text-xs font-mono mb-4">
-            Total pengeluaran: {formatIDR(totalExpense)}
+            {walletLabel} · {rangeLabel} · Total: {formatIDR(totalExpense)}
           </p>
           {pieData.length === 0 ? (
             <p className="text-vault-text-dim text-sm font-mono text-center py-8">Belum ada pengeluaran</p>
@@ -117,7 +192,12 @@ export default function AnalyticsCharts({ transactions }: { transactions: Transa
                   <span className="w-2 h-2 rounded-full flex-shrink-0" style={{ backgroundColor: d.color }} />
                   <span className="text-xs text-vault-text-dim font-mono">{d.icon} {d.name}</span>
                 </div>
-                <span className="text-xs text-vault-text font-mono font-semibold">{formatIDR(d.amount)}</span>
+                <div className="flex items-center gap-2">
+                  <span className="text-xs text-vault-text-dim font-mono">
+                    {totalExpense > 0 ? Math.round((d.amount / totalExpense) * 100) : 0}%
+                  </span>
+                  <span className="text-xs text-vault-text font-mono font-semibold">{formatIDR(d.amount)}</span>
+                </div>
               </div>
             ))}
           </div>
@@ -126,12 +206,12 @@ export default function AnalyticsCharts({ transactions }: { transactions: Transa
         {/* Top spending */}
         <div className="bg-vault-card border border-vault-border rounded-2xl p-5">
           <p className="font-display text-vault-gold tracking-widest text-lg mb-4">TOP PENGELUARAN</p>
-          {topCats.length === 0 ? (
+          {pieData.length === 0 ? (
             <p className="text-vault-text-dim text-sm font-mono text-center py-8">Belum ada data</p>
           ) : (
             <div className="space-y-4">
-              {topCats.map((cat, i) => {
-                const maxAmount = topCats[0].amount
+              {pieData.slice(0, 5).map((cat, i) => {
+                const maxAmount = pieData[0].amount
                 const pct = Math.round((cat.amount / maxAmount) * 100)
                 return (
                   <div key={cat.name}>
@@ -157,7 +237,8 @@ export default function AnalyticsCharts({ transactions }: { transactions: Transa
 
       {/* Line chart trend */}
       <div className="bg-vault-card border border-vault-border rounded-2xl p-5">
-        <p className="font-display text-vault-gold tracking-widest text-lg mb-6">TREN 6 BULAN</p>
+        <p className="font-display text-vault-gold tracking-widest text-lg mb-1">TREN 6 BULAN</p>
+        <p className="text-vault-text-dim text-xs font-mono mb-4">{walletLabel}</p>
         <ResponsiveContainer width="100%" height={220}>
           <LineChart data={trendData}>
             <CartesianGrid strokeDasharray="3 3" stroke="#2A2A2A" />

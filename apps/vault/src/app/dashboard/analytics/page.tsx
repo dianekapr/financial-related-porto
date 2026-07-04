@@ -5,16 +5,18 @@ export default async function AnalyticsPage() {
   const supabase = createServerSupabaseClient()
   const { data: { session } } = await supabase.auth.getSession()
 
-  // Last 12 months
-  const now = new Date()
-  const twelveMonthsAgo = new Date(now.getFullYear() - 1, now.getMonth(), 1)
-
-  const { data: transactions } = await supabase
-    .from('transactions')
-    .select('*, category:categories(*)')
-    .eq('user_id', session!.user.id)
-    .gte('date', twelveMonthsAgo.toISOString().split('T')[0])
-    .order('date', { ascending: true })
+  const [{ data: transactions }, { data: wallets }] = await Promise.all([
+    supabase
+      .from('transactions')
+      .select('*, category:categories(*)')
+      .eq('user_id', session!.user.id)
+      .order('date', { ascending: true }),
+    supabase
+      .from('wallets')
+      .select('*')
+      .eq('user_id', session!.user.id)
+      .order('created_at'),
+  ])
 
   return (
     <div className="space-y-6">
@@ -22,7 +24,7 @@ export default async function AnalyticsPage() {
         <p className="text-vault-text-dim text-sm font-mono uppercase tracking-widest">Laporan</p>
         <h1 className="font-display text-4xl md:text-5xl text-vault-text tracking-wider mt-1">ANALITIK</h1>
       </div>
-      <AnalyticsCharts transactions={transactions ?? []} />
+      <AnalyticsCharts transactions={transactions ?? []} wallets={wallets ?? []} />
     </div>
   )
 }

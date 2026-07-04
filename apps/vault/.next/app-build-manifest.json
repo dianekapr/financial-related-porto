@@ -21,10 +21,10 @@
       "static/chunks/main-app.js",
       "static/chunks/app/dashboard/wallets/page.js"
     ],
-    "/dashboard/wallets/[id]/page": [
+    "/dashboard/budget/page": [
       "static/chunks/webpack.js",
       "static/chunks/main-app.js",
-      "static/chunks/app/dashboard/wallets/[id]/page.js"
+      "static/chunks/app/dashboard/budget/page.js"
     ]
   }
 }

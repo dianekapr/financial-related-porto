@@ -9,6 +9,7 @@ import { useRouter } from 'next/navigation'
 const NAV = [
   { href: '/dashboard', icon: '◈', label: 'Dashboard' },
   { href: '/dashboard/transactions', icon: '↕', label: 'Transaksi' },
+  { href: '/dashboard/wallets', icon: '▣', label: 'Wallet' },
   { href: '/dashboard/budget', icon: '◎', label: 'Budget' },
   { href: '/dashboard/analytics', icon: '▲', label: 'Analitik' },
 ]

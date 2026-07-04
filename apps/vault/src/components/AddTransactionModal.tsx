@@ -1,20 +1,9 @@
 'use client'
 import { useEffect, useState, useTransition } from 'react'
 import { createClient } from '@portfolio/supabase'
-import type { Category } from '@portfolio/supabase'
+import type { Category, Wallet } from '@portfolio/supabase'
 import { useRouter } from 'next/navigation'
-
-const DEFAULT_CATEGORIES: Omit<Category, 'id' | 'user_id' | 'created_at'>[] = [
-  { name: 'Makan & Minum', icon: '🍜', color: '#E03E3E', budget_limit: null },
-  { name: 'Transport', icon: '🚗', color: '#C9A84C', budget_limit: null },
-  { name: 'Belanja', icon: '🛍️', color: '#8B5CF6', budget_limit: null },
-  { name: 'Hiburan', icon: '🎬', color: '#06B6D4', budget_limit: null },
-  { name: 'Kesehatan', icon: '💊', color: '#22C55E', budget_limit: null },
-  { name: 'Tagihan', icon: '📄', color: '#F97316', budget_limit: null },
-  { name: 'Gaji', icon: '💰', color: '#C9A84C', budget_limit: null },
-  { name: 'Freelance', icon: '💻', color: '#22C55E', budget_limit: null },
-  { name: 'Lainnya', icon: '📌', color: '#888888', budget_limit: null },
-]
+import { formatIDR } from '../lib/money'
 
 export default function AddTransactionModal({ onClose }: { onClose: () => void }) {
   const router = useRouter()
@@ -27,20 +16,19 @@ export default function AddTransactionModal({ onClose }: { onClose: () => void }
   const [date, setDate] = useState(new Date().toISOString().split('T')[0])
   const [categoryId, setCategoryId] = useState<string | null>(null)
   const [categories, setCategories] = useState<Category[]>([])
+  const [walletId, setWalletId] = useState<string | null>(null)
+  const [wallets, setWallets] = useState<Wallet[]>([])
 
   useEffect(() => {
     const load = async () => {
       const { data: { session } } = await supabase.auth.getSession()
       if (!session) return
-      let { data: cats } = await supabase.from('categories').select('*').eq('user_id', session.user.id)
-
-      // Seed default categories if none
-      if (!cats || cats.length === 0) {
-        const seeds = DEFAULT_CATEGORIES.map(c => ({ ...c, user_id: session.user.id }))
-        const { data: seeded } = await supabase.from('categories').insert(seeds).select()
-        cats = seeded
-      }
+      const [{ data: cats }, { data: wals }] = await Promise.all([
+        supabase.from('categories').select('*').eq('user_id', session.user.id),
+        supabase.from('wallets').select('*').eq('user_id', session.user.id).order('created_at'),
+      ])
       setCategories(cats ?? [])
+      setWallets(wals ?? [])
     }
     load()
   }, [])
@@ -59,9 +47,18 @@ export default function AddTransactionModal({ onClose }: { onClose: () => void }
         amount: numericAmount,
         type,
         category_id: categoryId,
+        wallet_id: walletId,
         note: note || null,
         date,
       })
+
+      // Keep the wallet's balance in sync with what actually moved through it
+      const wallet = wallets.find(w => w.id === walletId)
+      if (wallet) {
+        const delta = type === 'income' ? numericAmount : -numericAmount
+        await supabase.from('wallets').update({ balance: wallet.balance + delta }).eq('id', wallet.id)
+      }
+
       router.refresh()
       onClose()
     })
@@ -147,6 +144,31 @@ export default function AddTransactionModal({ onClose }: { onClose: () => void }
                 ))}
               </div>
             </div>
+
+            {/* Wallet */}
+            {wallets.length > 0 && (
+              <div>
+                <label className="text-vault-text-dim text-xs font-mono uppercase tracking-widest block mb-2">Wallet (opsional)</label>
+                <div className="flex flex-wrap gap-2">
+                  {wallets.map(w => (
+                    <button
+                      key={w.id}
+                      type="button"
+                      onClick={() => setWalletId(walletId === w.id ? null : w.id)}
+                      className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm border transition-all
+                        ${walletId === w.id
+                          ? 'border-transparent text-vault-bg font-medium'
+                          : 'border-vault-border text-vault-text-dim hover:border-vault-muted'
+                        }`}
+                      style={walletId === w.id ? { backgroundColor: w.color } : {}}
+                    >
+                      <span>{w.name}</span>
+                      <span className="opacity-75 text-xs">{formatIDR(w.balance)}</span>
+                    </button>
+                  ))}
+                </div>
+              </div>
+            )}
 
             {/* Note */}
             <div>

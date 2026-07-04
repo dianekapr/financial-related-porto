@@ -28,6 +28,15 @@ export interface Category {
   created_at: string
 }
 
+export interface Wallet {
+  id: string
+  user_id: string
+  name: string
+  balance: number
+  color: string
+  created_at: string
+}
+
 export interface Transaction {
   id: string
   user_id: string
@@ -35,6 +44,8 @@ export interface Transaction {
   type: TransactionType
   category_id: string | null
   category?: Category
+  wallet_id: string | null
+  wallet?: Wallet
   note: string | null
   date: string
   created_at: string

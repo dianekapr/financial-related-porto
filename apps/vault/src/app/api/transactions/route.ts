@@ -54,6 +54,15 @@ export async function DELETE(req: Request) {
   const { data: { session } } = await supabase.auth.getSession()
   if (!session) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 
+  // Look up what this transaction did to its wallet before deleting it, so
+  // we can reverse the effect and keep the wallet balance accurate
+  const { data: tx } = await supabase
+    .from('transactions')
+    .select('amount, type, wallet_id')
+    .eq('id', id)
+    .eq('user_id', session.user.id)
+    .single()
+
   const { error } = await supabase
     .from('transactions')
     .delete()
@@ -61,5 +70,14 @@ export async function DELETE(req: Request) {
     .eq('user_id', session.user.id)
 
   if (error) return NextResponse.json({ error: error.message }, { status: 500 })
+
+  if (tx?.wallet_id) {
+    const { data: wallet } = await supabase.from('wallets').select('balance').eq('id', tx.wallet_id).single()
+    if (wallet) {
+      const reversal = tx.type === 'income' ? -tx.amount : tx.amount
+      await supabase.from('wallets').update({ balance: wallet.balance + reversal }).eq('id', tx.wallet_id)
+    }
+  }
+
   return NextResponse.json({ success: true })
 }

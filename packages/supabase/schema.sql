@@ -104,6 +104,7 @@ create table public.bills (
   owner_id uuid references auth.users on delete cascade not null,
   title text not null,
   total numeric(12,2) not null default 0,
+  currency text not null default 'IDR',
   date date not null default current_date,
   receipt_url text,
   is_settled boolean default false,
@@ -198,3 +199,9 @@ create policy "Authenticated users can upload receipts" on storage.objects
   for insert with check (bucket_id = 'receipts' and auth.role() = 'authenticated');
 create policy "Receipt owner can read" on storage.objects
   for select using (bucket_id = 'receipts' and auth.uid()::text = (storage.foldername(name))[1]);
+
+-- ============================================================
+-- MIGRATION — run manually in SQL Editor if `bills` already exists
+-- (adds per-bill currency, chosen at bill creation)
+-- ============================================================
+-- alter table public.bills add column if not exists currency text not null default 'IDR';

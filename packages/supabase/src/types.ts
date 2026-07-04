@@ -67,6 +67,7 @@ export interface Bill {
   owner_id: string
   title: string
   total: number
+  currency: string
   date: string
   receipt_url: string | null
   is_settled: boolean
@@ -112,7 +113,7 @@ export interface Payment {
   created_at: string
 }
 
-// ---- Claude Vision scan result ----
+// ---- Vision scan result ----
 export interface ScannedReceipt {
   items: Array<{
     name: string
@@ -121,4 +122,5 @@ export interface ScannedReceipt {
   }>
   total: number | null
   title: string | null
+  error?: string
 }

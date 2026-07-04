@@ -1,0 +1,93 @@
+- untuk slice masih belum bisa scan karcis 
+- 
+
+ini belum bener deh kok transfernya cuma 4rb?
+Siapa Bayar Berapa?
+Tagihan "makan malem"
+RINCIAN PER ORANG
+
+🧔
+a
+Rp20.000
+👩
+b
+Rp12.000
+TRANSFER YANG PERLU DILAKUKAN
+
+👩
+b
+transfer ke
+🧔
+a
+Rp4.000
+
+📲
+WA b
+✅ Tandai Lunas & Selesai
+
+padahal struknya kayak gini: 
+STRUK / ITEMS
+2 item
+📷 Scan Struk
++ Item
+ayam
+2× Rp20.000 = Rp40.000
+Rp40.000
+
+🧔
+a
+(Rp40.000)
+
+👩
+b
+nasi
+2× Rp6.000 = Rp12.000
+Rp12.000
+
+🧔
+a
+
+👩
+b
+(Rp12.000)
+TOTAL
+Rp52.000
+
+
+
+
+
+
+ 
+1 of 2 unhandled errors
+Next.js (14.1.0) is outdated (learn more)
+
+Unhandled Runtime Error
+Error: Text content does not match server-rendered HTML.
+
+Warning: Text content did not match. Server: "Rp 0" Client: "Rp0"
+
+See more info here: https://nextjs.org/docs/messages/react-hydration-error
+Component Stack
+
+
+ 
+2 of 2 unhandled errors
+Next.js (14.1.0) is outdated (learn more)
+
+Unhandled Runtime Error
+Error: There was an error while hydrating. Because the error happened outside of a Suspense boundary, the entire root will switch to client rendering.
+
+npm error A complete log of this run can be found in: /Users/dianekapr/.npm/_logs/2026-06-30T04_10_11_478Z-debug-0.log
+ ✓ Ready in 1032ms
+ ✓ Compiled /src/middleware in 90ms (117 modules)
+ ✓ Compiled /not-found in 259ms (413 modules)
+ ✓ Compiled /bills in 436ms (1816 modules)
+Using the user object as returned from supabase.auth.getSession() or from some supabase.auth.onAuthStateChange() events could be insecure! This value comes directly from the storage medium (usually cookies on the server) and may not be authentic. Use supabase.auth.getUser() instead which authenticates the data by contacting the Supabase Auth server.
+Using the user object as returned from supabase.auth.getSession() or from some supabase.auth.onAuthStateChange() events could be insecure! This value comes directly from the storage medium (usually cookies on the server) and may not be authentic. Use supabase.auth.getUser() instead which authenticates the data by contacting the Supabase Auth server.
+ ✓ Compiled /bills/[id] in 131ms (1829 modules)
+Using the user object as returned from supabase.auth.getSession() or from some supabase.auth.onAuthStateChange() events could be insecure! This value comes directly from the storage medium (usually cookies on the server) and may not be authentic. Use supabase.auth.getUser() instead which authenticates the data by contacting the Supabase Auth server.
+
+
+
+import { createServerSupabaseClient } from '../../../../../../../packages/supabase/src/server'

@@ -5,6 +5,7 @@ import SummaryCards from '@/components/dashboard/SummaryCards'
 import TransactionTicker from '@/components/dashboard/TransactionTicker'
 import BudgetGauge from '@/components/dashboard/BudgetGauge'
 import MonthlyChart from '@/components/dashboard/MonthlyChart'
+import { formatIDR } from '@/lib/money'
 
 export default async function DashboardPage() {
   const supabase = createServerSupabaseClient()
@@ -61,7 +62,7 @@ export default async function DashboardPage() {
         <div className="text-right">
           <p className="text-vault-text-dim text-xs font-mono">saldo bulan ini</p>
           <p className={`font-mono text-2xl font-semibold ${income - expense >= 0 ? 'text-vault-gold' : 'text-vault-red'}`}>
-            {(income - expense).toLocaleString('id-ID', { style: 'currency', currency: 'IDR', maximumFractionDigits: 0 })}
+            {formatIDR(income - expense)}
           </p>
         </div>
       </div>

@@ -2,6 +2,7 @@
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, Cell } from 'recharts'
 import { format, subMonths, startOfMonth, endOfMonth } from 'date-fns'
 import { id as localeId } from 'date-fns/locale'
+import { formatIDR } from '../../lib/money'
 
 interface Tx { amount: number; type: string; date: string }
 
@@ -37,7 +38,7 @@ const CustomTooltip = ({ active, payload, label }: any) => {
       {payload.map((p: any) => (
         <p key={p.name} style={{ color: p.fill }} className="flex justify-between gap-4">
           <span>{p.name === 'income' ? '↑ Masuk' : '↓ Keluar'}</span>
-          <span>{p.value.toLocaleString('id-ID', { style: 'currency', currency: 'IDR', maximumFractionDigits: 0 })}</span>
+          <span>{formatIDR(p.value)}</span>
         </p>
       ))}
     </div>

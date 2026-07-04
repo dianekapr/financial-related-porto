@@ -1,5 +1,6 @@
 'use client'
 import type { Budget, Transaction } from '@portfolio/supabase'
+import { formatIDR } from '../../lib/money'
 
 function CircleGauge({ pct, color }: { pct: number; color: string }) {
   const r = 20
@@ -30,10 +31,6 @@ function CircleGauge({ pct, color }: { pct: number; color: string }) {
       </text>
     </svg>
   )
-}
-
-function formatIDR(n: number) {
-  return n.toLocaleString('id-ID', { style: 'currency', currency: 'IDR', maximumFractionDigits: 0 })
 }
 
 export default function BudgetGauge({ budgets, transactions }: { budgets: Budget[]; transactions: Transaction[] }) {

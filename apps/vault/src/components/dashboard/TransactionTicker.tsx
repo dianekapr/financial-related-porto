@@ -5,10 +5,7 @@ import { format } from 'date-fns'
 import { id as localeId } from 'date-fns/locale'
 import AddTransactionModal from '@/components/AddTransactionModal'
 import Link from 'next/link'
-
-function formatIDR(n: number) {
-  return n.toLocaleString('id-ID', { style: 'currency', currency: 'IDR', maximumFractionDigits: 0 })
-}
+import { formatIDR } from '../../lib/money'
 
 export default function TransactionTicker({ transactions }: { transactions: Transaction[] }) {
   const [showAdd, setShowAdd] = useState(false)

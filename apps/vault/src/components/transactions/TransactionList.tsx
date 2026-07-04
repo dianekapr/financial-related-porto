@@ -6,12 +6,9 @@ import { format } from 'date-fns'
 import { id as localeId } from 'date-fns/locale'
 import AddTransactionModal from '@/components/AddTransactionModal'
 import { createClient } from '@portfolio/supabase'
+import { formatIDR } from '../../lib/money'
 
 const MONTHS = ['Jan','Feb','Mar','Apr','Mei','Jun','Jul','Agu','Sep','Okt','Nov','Des']
-
-function formatIDR(n: number) {
-  return n.toLocaleString('id-ID', { style: 'currency', currency: 'IDR', maximumFractionDigits: 0 })
-}
 
 // Group transactions by date
 function groupByDate(txs: Transaction[]) {

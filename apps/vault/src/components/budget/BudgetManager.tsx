@@ -3,10 +3,7 @@ import { useState, useTransition } from 'react'
 import { useRouter } from 'next/navigation'
 import { createClient } from '@portfolio/supabase'
 import type { Category, Budget } from '@portfolio/supabase'
-
-function formatIDR(n: number) {
-  return n.toLocaleString('id-ID', { style: 'currency', currency: 'IDR', maximumFractionDigits: 0 })
-}
+import { formatIDR } from '../../lib/money'
 
 function ProgressBar({ pct, color }: { pct: number; color: string }) {
   const over = pct > 100

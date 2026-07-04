@@ -1,13 +1,10 @@
 'use client'
+import { formatIDR } from '../../lib/money'
 
 interface Props {
   income: number
   expense: number
   txCount: number
-}
-
-function formatIDR(n: number) {
-  return n.toLocaleString('id-ID', { style: 'currency', currency: 'IDR', maximumFractionDigits: 0 })
 }
 
 export default function SummaryCards({ income, expense, txCount }: Props) {

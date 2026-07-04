@@ -6,10 +6,8 @@ import {
 import { format, subMonths, startOfMonth, endOfMonth } from 'date-fns'
 import { id as localeId } from 'date-fns/locale'
 import type { Transaction } from '@portfolio/supabase'
+import { formatIDR } from '../../lib/money'
 
-function formatIDR(n: number) {
-  return n.toLocaleString('id-ID', { style: 'currency', currency: 'IDR', maximumFractionDigits: 0 })
-}
 function formatShort(n: number) {
   if (n >= 1_000_000) return `${(n / 1_000_000).toFixed(1)}jt`
   if (n >= 1_000) return `${(n / 1_000).toFixed(0)}rb`

@@ -561,6 +561,9 @@ video {
 .h-3{
   height: 0.75rem;
 }
+.h-4{
+  height: 1rem;
+}
 .h-7{
   height: 1.75rem;
 }
@@ -1291,6 +1294,11 @@ html, body {
 
 .disabled\:opacity-50:disabled{
   opacity: 0.5;
+}
+
+.group:hover .group-hover\:text-vault-gold{
+  --tw-text-opacity: 1;
+  color: rgb(201 168 76 / var(--tw-text-opacity, 1));
 }
 
 .group:hover .group-hover\:opacity-100{

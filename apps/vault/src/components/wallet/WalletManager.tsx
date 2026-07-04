@@ -1,6 +1,7 @@
 'use client'
 import { useState, useTransition } from 'react'
 import { useRouter } from 'next/navigation'
+import Link from 'next/link'
 import { createClient } from '@portfolio/supabase'
 import type { Wallet } from '@portfolio/supabase'
 import { formatIDR } from '../../lib/money'
@@ -80,13 +81,13 @@ export default function WalletManager({ wallets }: { wallets: Wallet[] }) {
           return (
             <div key={w.id} className="bg-vault-card border border-vault-border rounded-2xl p-4">
               <div className="flex items-start justify-between gap-3">
-                <div className="flex items-center gap-2.5">
+                <Link href={`/dashboard/wallets/${w.id}`} className="flex items-center gap-2.5 group">
                   <div className="w-3 h-3 rounded-full flex-shrink-0" style={{ backgroundColor: w.color }} />
                   <div>
-                    <p className="text-sm font-medium text-vault-text">{w.name}</p>
+                    <p className="text-sm font-medium text-vault-text group-hover:text-vault-gold transition-colors">{w.name}</p>
                     <p className="font-mono text-lg text-vault-gold font-semibold mt-0.5">{formatIDR(w.balance)}</p>
                   </div>
-                </div>
+                </Link>
                 <div className="flex items-center gap-1">
                   <button onClick={() => handleDelete(w.id)}
                     className="text-vault-muted hover:text-vault-red text-xs px-1.5 py-1 rounded transition-colors">✕</button>

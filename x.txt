@@ -7,4 +7,7 @@ bikin biar user bisa ganti tema aplikasi. bukan sekedar light and dark tapi tema
 jangan ada emoji, pake icon dr react aja atau apa kek pokonya jgn emoji
 
 dibikin biar masing2 walletnya nnt tu bisa dipencet biar keliatan detail/list transaksi yg terjadi di wallet tsb
+
+bisa pilih bahasa
+bisa filter pengeluaran berdasarkan wallet
 diagram persentase utk liat lebih banyak ngabisin uang di kategori apa (bisa liat as whole, per wallet, ataupun per rentang waktu tertentu)

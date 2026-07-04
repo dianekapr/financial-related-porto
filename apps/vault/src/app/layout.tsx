@@ -1,6 +1,8 @@
 import type { Metadata, Viewport } from 'next'
 import './globals.css'
 import ThemeProvider, { themeInitScript } from '../components/ThemeProvider'
+import LocaleProvider from '../components/LocaleProvider'
+import { getServerLocale } from '../lib/getServerLocale'
 
 export const metadata: Metadata = {
   title: 'VAULT — Money Manager',
@@ -17,13 +19,17 @@ export const viewport: Viewport = {
 }
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
+  const locale = getServerLocale()
+
   return (
-    <html lang="id" className="dark" suppressHydrationWarning>
+    <html lang={locale} className="dark" suppressHydrationWarning>
       <head>
         <script dangerouslySetInnerHTML={{ __html: themeInitScript }} />
       </head>
       <body className="bg-vault-bg text-vault-text antialiased">
-        <ThemeProvider>{children}</ThemeProvider>
+        <ThemeProvider>
+          <LocaleProvider initialLocale={locale}>{children}</LocaleProvider>
+        </ThemeProvider>
       </body>
     </html>
   )

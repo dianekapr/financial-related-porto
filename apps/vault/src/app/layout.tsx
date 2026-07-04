@@ -1,5 +1,6 @@
 import type { Metadata, Viewport } from 'next'
 import './globals.css'
+import ThemeProvider, { themeInitScript } from '../components/ThemeProvider'
 
 export const metadata: Metadata = {
   title: 'VAULT — Money Manager',
@@ -17,9 +18,12 @@ export const viewport: Viewport = {
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
-    <html lang="id" className="dark">
+    <html lang="id" className="dark" suppressHydrationWarning>
+      <head>
+        <script dangerouslySetInnerHTML={{ __html: themeInitScript }} />
+      </head>
       <body className="bg-vault-bg text-vault-text antialiased">
-        {children}
+        <ThemeProvider>{children}</ThemeProvider>
       </body>
     </html>
   )

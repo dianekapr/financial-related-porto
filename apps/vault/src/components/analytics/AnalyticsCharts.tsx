@@ -8,6 +8,7 @@ import { format, subMonths, startOfMonth, endOfMonth, startOfYear } from 'date-f
 import { id as localeId } from 'date-fns/locale'
 import type { Transaction, Wallet } from '@portfolio/supabase'
 import { formatIDR } from '../../lib/money'
+import Select from '../ui/Select'
 
 function formatShort(n: number) {
   if (n >= 1_000_000) return `${(n / 1_000_000).toFixed(1)}jt`
@@ -111,24 +112,19 @@ export default function AnalyticsCharts({ transactions, wallets }: { transaction
       <div className="bg-vault-card border border-vault-border rounded-2xl p-4 flex flex-wrap items-center gap-3">
         <div>
           <label className="text-vault-text-dim text-[10px] font-mono uppercase tracking-widest block mb-1">Wallet</label>
-          <select
+          <Select
             value={walletFilter}
-            onChange={e => setWalletFilter(e.target.value)}
-            className="bg-vault-surface border border-vault-border rounded-lg px-3 py-2 text-sm font-mono text-vault-text focus:outline-none focus:border-vault-gold/50"
-          >
-            <option value="all">Semua Wallet</option>
-            {wallets.map(w => <option key={w.id} value={w.id}>{w.name}</option>)}
-          </select>
+            onChange={setWalletFilter}
+            options={[{ value: 'all', label: 'Semua Wallet' }, ...wallets.map(w => ({ value: w.id, label: w.name }))]}
+          />
         </div>
         <div>
           <label className="text-vault-text-dim text-[10px] font-mono uppercase tracking-widest block mb-1">Rentang Waktu</label>
-          <select
+          <Select
             value={range}
-            onChange={e => setRange(e.target.value as typeof range)}
-            className="bg-vault-surface border border-vault-border rounded-lg px-3 py-2 text-sm font-mono text-vault-text focus:outline-none focus:border-vault-gold/50"
-          >
-            {RANGES.map(r => <option key={r.value} value={r.value}>{r.label}</option>)}
-          </select>
+            onChange={v => setRange(v as typeof range)}
+            options={RANGES.map(r => ({ value: r.value, label: r.label }))}
+          />
         </div>
         {range === 'custom' && (
           <div className="flex items-end gap-2">

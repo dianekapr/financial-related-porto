@@ -5,19 +5,23 @@ module.exports = {
   theme: {
     extend: {
       colors: {
+        // Most tokens read from CSS variables so a theme can swap the
+        // whole palette at runtime (see globals.css `[data-theme]` blocks).
+        // `red`/`red-muted` stay hardcoded on purpose: expense/danger
+        // should look the same regardless of which color theme is active.
         vault: {
-          bg: '#0A0A0A',
-          surface: '#111111',
-          card: '#1A1A1A',
-          border: '#2A2A2A',
-          gold: '#C9A84C',
-          'gold-light': '#E8C96A',
+          bg: 'var(--vault-bg)',
+          surface: 'var(--vault-surface)',
+          card: 'var(--vault-card)',
+          border: 'var(--vault-border)',
+          gold: 'var(--vault-accent)',
+          'gold-light': 'var(--vault-accent-light)',
           red: '#E03E3E',
           'red-muted': '#991F1F',
           green: '#22C55E',
-          muted: '#555555',
-          text: '#E8E8E8',
-          'text-dim': '#888888',
+          muted: 'var(--vault-muted)',
+          text: 'var(--vault-text)',
+          'text-dim': 'var(--vault-text-dim)',
         },
       },
       fontFamily: {

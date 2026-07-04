@@ -3,6 +3,66 @@
 @tailwind components;
 @tailwind utilities;
 
+:root, [data-theme="gold"] {
+  --vault-bg: #0A0A0A;
+  --vault-surface: #111111;
+  --vault-card: #1A1A1A;
+  --vault-border: #2A2A2A;
+  --vault-accent: #C9A84C;
+  --vault-accent-light: #E8C96A;
+  --vault-muted: #555555;
+  --vault-text: #E8E8E8;
+  --vault-text-dim: #888888;
+}
+
+[data-theme="ocean"] {
+  --vault-bg: #050B14;
+  --vault-surface: #0A1420;
+  --vault-card: #101D2E;
+  --vault-border: #1E3145;
+  --vault-accent: #3B82F6;
+  --vault-accent-light: #60A5FA;
+  --vault-muted: #4A5A6B;
+  --vault-text: #E5EDF5;
+  --vault-text-dim: #7C93A8;
+}
+
+[data-theme="emerald"] {
+  --vault-bg: #05100A;
+  --vault-surface: #0A1810;
+  --vault-card: #10241A;
+  --vault-border: #1E3527;
+  --vault-accent: #22C55E;
+  --vault-accent-light: #4ADE80;
+  --vault-muted: #4A6055;
+  --vault-text: #E5F5EC;
+  --vault-text-dim: #7CA891;
+}
+
+[data-theme="rose"] {
+  --vault-bg: #100509;
+  --vault-surface: #180A10;
+  --vault-card: #241019;
+  --vault-border: #351E29;
+  --vault-accent: #EC4899;
+  --vault-accent-light: #F472B6;
+  --vault-muted: #6B4A58;
+  --vault-text: #F5E5EC;
+  --vault-text-dim: #A87C93;
+}
+
+[data-theme="violet"] {
+  --vault-bg: #0A0714;
+  --vault-surface: #120D20;
+  --vault-card: #1C1530;
+  --vault-border: #2D2145;
+  --vault-accent: #8B5CF6;
+  --vault-accent-light: #A78BFA;
+  --vault-muted: #5B4A6B;
+  --vault-text: #ECE5F5;
+  --vault-text-dim: #937CA8;
+}
+
 :root {
   --font-bebas: 'Bebas Neue';
   --font-ibm-mono: 'IBM Plex Mono';
@@ -12,8 +72,8 @@
 * { box-sizing: border-box; }
 
 html, body {
-  background: #0A0A0A;
-  color: #E8E8E8;
+  background: var(--vault-bg);
+  color: var(--vault-text);
   min-height: 100dvh;
   font-family: 'Inter', sans-serif;
   -webkit-font-smoothing: antialiased;
@@ -21,26 +81,26 @@ html, body {
 
 /* Scrollbar */
 ::-webkit-scrollbar { width: 4px; height: 4px; }
-::-webkit-scrollbar-track { background: #111; }
-::-webkit-scrollbar-thumb { background: #2A2A2A; border-radius: 2px; }
-::-webkit-scrollbar-thumb:hover { background: #C9A84C44; }
+::-webkit-scrollbar-track { background: var(--vault-surface); }
+::-webkit-scrollbar-thumb { background: var(--vault-border); border-radius: 2px; }
+::-webkit-scrollbar-thumb:hover { background: color-mix(in srgb, var(--vault-accent) 60%, transparent); }
 
-/* Gold focus ring */
-*:focus-visible { outline: 2px solid #C9A84C; outline-offset: 2px; }
+/* Accent focus ring */
+*:focus-visible { outline: 2px solid var(--vault-accent); outline-offset: 2px; }
 
 /* Number animation */
 .animate-number { animation: numberPop 0.3s cubic-bezier(0.34, 1.56, 0.64, 1) forwards; }
 
 /* Glass card */
 .glass {
-  background: rgba(26, 26, 26, 0.8);
+  background: color-mix(in srgb, var(--vault-card) 80%, transparent);
   backdrop-filter: blur(12px);
   border: 1px solid rgba(255,255,255,0.06);
 }
 
-/* Gold shimmer */
+/* Accent shimmer */
 .gold-shimmer {
-  background: linear-gradient(90deg, #C9A84C, #E8C96A, #C9A84C);
+  background: linear-gradient(90deg, var(--vault-accent), var(--vault-accent-light), var(--vault-accent));
   background-size: 200% auto;
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;

@@ -5,19 +5,22 @@ import { createClient } from '@portfolio/supabase'
 import Image from 'next/image'
 import type { Profile } from '@portfolio/supabase'
 import { useRouter } from 'next/navigation'
-
-const NAV = [
-  { href: '/dashboard', icon: '◈', label: 'Dashboard' },
-  { href: '/dashboard/transactions', icon: '↕', label: 'Transaksi' },
-  { href: '/dashboard/wallets', icon: '▣', label: 'Wallet' },
-  { href: '/dashboard/budget', icon: '◎', label: 'Budget' },
-  { href: '/dashboard/analytics', icon: '▲', label: 'Analitik' },
-]
+import { useLocale } from './LocaleProvider'
 
 export default function Sidebar({ profile }: { profile: Profile | null }) {
   const pathname = usePathname()
   const router = useRouter()
   const supabase = createClient()
+  const { t } = useLocale()
+
+  const NAV = [
+    { href: '/dashboard', icon: '◈', label: t('nav') },
+    { href: '/dashboard/transactions', icon: '↕', label: t('navTransactions') },
+    { href: '/dashboard/wallets', icon: '▣', label: t('navWallets') },
+    { href: '/dashboard/budget', icon: '◎', label: t('navBudget') },
+    { href: '/dashboard/analytics', icon: '▲', label: t('navAnalytics') },
+    { href: '/dashboard/settings', icon: '⚙', label: t('navSettings') },
+  ]
 
   const signOut = async () => {
     await supabase.auth.signOut()
@@ -59,7 +62,7 @@ export default function Sidebar({ profile }: { profile: Profile | null }) {
             {profile?.full_name?.[0] ?? '?'}
           </div>
         )}
-        <button onClick={signOut} title="Keluar" className="w-9 h-9 flex items-center justify-center text-vault-muted hover:text-vault-red transition-colors text-lg">
+        <button onClick={signOut} title={t('logout')} className="w-9 h-9 flex items-center justify-center text-vault-muted hover:text-vault-red transition-colors text-lg">
           ⏻
         </button>
       </div>

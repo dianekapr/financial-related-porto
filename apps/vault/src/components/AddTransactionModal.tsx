@@ -4,10 +4,12 @@ import { createClient } from '@portfolio/supabase'
 import type { Category, Wallet } from '@portfolio/supabase'
 import { useRouter } from 'next/navigation'
 import { formatIDR } from '../lib/money'
+import { useLocale } from './LocaleProvider'
 
 export default function AddTransactionModal({ onClose }: { onClose: () => void }) {
   const router = useRouter()
   const supabase = createClient()
+  const { t } = useLocale()
   const [isPending, startTransition] = useTransition()
 
   const [type, setType] = useState<'income' | 'expense'>('expense')
@@ -81,30 +83,30 @@ export default function AddTransactionModal({ onClose }: { onClose: () => void }
         <div className="md:hidden w-10 h-1 bg-vault-border rounded-full mx-auto mt-3 mb-1" />
 
         <div className="p-6">
-          <h2 className="font-display text-vault-gold tracking-widest text-2xl mb-6">TAMBAH TRANSAKSI</h2>
+          <h2 className="font-display text-vault-gold tracking-widest text-2xl mb-6">{t('addTxTitle')}</h2>
 
           <form onSubmit={handleSubmit} className="space-y-4">
             {/* Type toggle */}
             <div className="flex rounded-xl overflow-hidden border border-vault-border">
-              {(['expense', 'income'] as const).map((t) => (
+              {(['expense', 'income'] as const).map((txType) => (
                 <button
-                  key={t}
+                  key={txType}
                   type="button"
-                  onClick={() => { setType(t); setCategoryId(null) }}
+                  onClick={() => { setType(txType); setCategoryId(null) }}
                   className={`flex-1 py-2.5 text-sm font-mono transition-all
-                    ${type === t
-                      ? t === 'income' ? 'bg-vault-gold text-vault-bg font-semibold' : 'bg-vault-red text-white font-semibold'
+                    ${type === txType
+                      ? txType === 'income' ? 'bg-vault-gold text-vault-bg font-semibold' : 'bg-vault-red text-white font-semibold'
                       : 'text-vault-text-dim hover:text-vault-text'
                     }`}
                 >
-                  {t === 'income' ? '↑ Pemasukan' : '↓ Pengeluaran'}
+                  {txType === 'income' ? t('incomeToggle') : t('expenseToggle')}
                 </button>
               ))}
             </div>
 
             {/* Amount */}
             <div>
-              <label className="text-vault-text-dim text-xs font-mono uppercase tracking-widest block mb-2">Jumlah</label>
+              <label className="text-vault-text-dim text-xs font-mono uppercase tracking-widest block mb-2">{t('addTxAmount')}</label>
               <div className="relative">
                 <span className="absolute left-4 top-1/2 -translate-y-1/2 text-vault-text-dim font-mono text-sm">Rp</span>
                 <input
@@ -124,7 +126,7 @@ export default function AddTransactionModal({ onClose }: { onClose: () => void }
 
             {/* Category */}
             <div>
-              <label className="text-vault-text-dim text-xs font-mono uppercase tracking-widest block mb-2">Kategori</label>
+              <label className="text-vault-text-dim text-xs font-mono uppercase tracking-widest block mb-2">{t('addTxCategory')}</label>
               <div className="flex flex-wrap gap-2">
                 {filteredCats.map(cat => (
                   <button
@@ -148,7 +150,7 @@ export default function AddTransactionModal({ onClose }: { onClose: () => void }
             {/* Wallet */}
             {wallets.length > 0 && (
               <div>
-                <label className="text-vault-text-dim text-xs font-mono uppercase tracking-widest block mb-2">Wallet (opsional)</label>
+                <label className="text-vault-text-dim text-xs font-mono uppercase tracking-widest block mb-2">{t('walletOptional')}</label>
                 <div className="flex flex-wrap gap-2">
                   {wallets.map(w => (
                     <button
@@ -172,19 +174,19 @@ export default function AddTransactionModal({ onClose }: { onClose: () => void }
 
             {/* Note */}
             <div>
-              <label className="text-vault-text-dim text-xs font-mono uppercase tracking-widest block mb-2">Catatan (opsional)</label>
+              <label className="text-vault-text-dim text-xs font-mono uppercase tracking-widest block mb-2">{t('addTxNote')}</label>
               <input
                 type="text"
                 value={note}
                 onChange={e => setNote(e.target.value)}
-                placeholder="Makan siang di warung..."
+                placeholder={t('addTxNotePlaceholder')}
                 className="w-full bg-vault-card border border-vault-border rounded-xl py-3 px-4 text-sm text-vault-text placeholder-vault-muted focus:outline-none focus:border-vault-gold/50 transition-colors"
               />
             </div>
 
             {/* Date */}
             <div>
-              <label className="text-vault-text-dim text-xs font-mono uppercase tracking-widest block mb-2">Tanggal</label>
+              <label className="text-vault-text-dim text-xs font-mono uppercase tracking-widest block mb-2">{t('addTxDate')}</label>
               <input
                 type="date"
                 value={date}
@@ -199,7 +201,7 @@ export default function AddTransactionModal({ onClose }: { onClose: () => void }
               disabled={isPending || !amount}
               className="w-full bg-vault-gold text-vault-bg rounded-xl py-3.5 font-mono font-semibold text-sm hover:bg-vault-gold-light active:scale-[0.98] transition-all disabled:opacity-50 mt-2"
             >
-              {isPending ? 'Menyimpan...' : 'Simpan Transaksi'}
+              {isPending ? t('saving') : t('addTxSubmit')}
             </button>
           </form>
         </div>

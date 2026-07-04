@@ -1,10 +1,12 @@
 'use client'
 import { createClient } from '@portfolio/supabase'
 import { useState } from 'react'
+import { useLocale } from '../../components/LocaleProvider'
 
 export default function LoginPage() {
   const [loading, setLoading] = useState(false)
   const supabase = createClient()
+  const { t } = useLocale()
 
   const signInWithGoogle = async () => {
     setLoading(true)
@@ -32,8 +34,8 @@ export default function LoginPage() {
         {/* Card */}
         <div className="glass rounded-2xl p-8 space-y-6">
           <div className="space-y-1">
-            <h2 className="text-xl font-semibold">Masuk ke akun</h2>
-            <p className="text-vault-text-dim text-sm">Kelola keuanganmu dengan gaya</p>
+            <h2 className="text-xl font-semibold">{t('loginTitle')}</h2>
+            <p className="text-vault-text-dim text-sm">{t('loginSubtitle')}</p>
           </div>
 
           <button
@@ -47,21 +49,21 @@ export default function LoginPage() {
               <path d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z" fill="#FBBC05"/>
               <path d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" fill="#EA4335"/>
             </svg>
-            {loading ? 'Menghubungkan...' : 'Lanjutkan dengan Google'}
+            {loading ? t('loginConnecting') : t('loginContinueGoogle')}
           </button>
 
           <p className="text-vault-text-dim text-xs text-center">
-            Dengan masuk, kamu setuju dengan{' '}
-            <span className="text-vault-gold">Syarat & Ketentuan</span>
+            {t('loginTermsPrefix')}{' '}
+            <span className="text-vault-gold">{t('loginTerms')}</span>
           </p>
         </div>
 
         {/* Features hint */}
         <div className="mt-8 grid grid-cols-3 gap-3 text-center">
           {[
-            { icon: '📊', label: 'Track pengeluaran' },
-            { icon: '🎯', label: 'Budget per kategori' },
-            { icon: '📈', label: 'Analisis bulanan' },
+            { icon: '📊', label: t('loginFeatureTrack') },
+            { icon: '🎯', label: t('loginFeatureBudget') },
+            { icon: '📈', label: t('loginFeatureAnalysis') },
           ].map((f) => (
             <div key={f.label} className="glass rounded-xl p-3">
               <div className="text-xl mb-1">{f.icon}</div>

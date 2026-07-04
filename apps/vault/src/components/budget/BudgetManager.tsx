@@ -4,6 +4,7 @@ import { useRouter } from 'next/navigation'
 import { createClient } from '@portfolio/supabase'
 import type { Category, Budget } from '@portfolio/supabase'
 import { formatIDR } from '../../lib/money'
+import { useLocale } from '../LocaleProvider'
 
 function ProgressBar({ pct, color }: { pct: number; color: string }) {
   const over = pct > 100
@@ -31,13 +32,14 @@ export default function BudgetManager({
 }) {
   const router = useRouter()
   const supabase = createClient()
+  const { t } = useLocale()
   const [isPending, startTransition] = useTransition()
   const [editing, setEditing] = useState<string | null>(null)
   const [inputVal, setInputVal] = useState('')
 
   const getBudget = (catId: string) => budgets.find(b => b.category_id === catId)
   const getSpent = (catId: string) =>
-    transactions.filter(t => t.category_id === catId).reduce((s, t) => s + t.amount, 0)
+    transactions.filter(tx => tx.category_id === catId).reduce((s, tx) => s + tx.amount, 0)
 
   const handleSave = async (catId: string) => {
     const amount = parseFloat(inputVal.replace(/[^0-9]/g, ''))
@@ -59,7 +61,7 @@ export default function BudgetManager({
     })
   }
 
-  const handleDelete = async (budgetId: string) => {
+  const handleDelete = (budgetId: string) => {
     startTransition(async () => {
       await supabase.from('budgets').delete().eq('id', budgetId)
       router.refresh()
@@ -68,7 +70,7 @@ export default function BudgetManager({
 
   const expenseCategories = categories.filter(c => !['Gaji', 'Freelance'].some(n => c.name.includes(n)))
   const totalBudget = budgets.reduce((s, b) => s + b.amount, 0)
-  const totalSpent = transactions.reduce((s, t) => s + t.amount, 0)
+  const totalSpent = transactions.reduce((s, tx) => s + tx.amount, 0)
 
   return (
     <div className="space-y-4">
@@ -76,11 +78,11 @@ export default function BudgetManager({
       <div className="bg-vault-card border border-vault-border rounded-2xl p-5">
         <div className="flex items-end justify-between mb-3">
           <div>
-            <p className="text-vault-text-dim text-xs font-mono uppercase tracking-widest">Total Budget Bulan Ini</p>
+            <p className="text-vault-text-dim text-xs font-mono uppercase tracking-widest">{t('budgetTotalThisMonth')}</p>
             <p className="font-mono text-2xl text-vault-gold font-semibold mt-1">{formatIDR(totalBudget)}</p>
           </div>
           <div className="text-right">
-            <p className="text-vault-text-dim text-xs font-mono">Terpakai</p>
+            <p className="text-vault-text-dim text-xs font-mono">{t('budgetUsed')}</p>
             <p className={`font-mono text-lg font-semibold ${totalSpent > totalBudget ? 'text-vault-red' : 'text-vault-text'}`}>
               {formatIDR(totalSpent)}
             </p>
@@ -91,7 +93,7 @@ export default function BudgetManager({
           color="#C9A84C"
         />
         <p className="text-vault-text-dim text-xs font-mono mt-1.5 text-right">
-          Sisa: {formatIDR(Math.max(0, totalBudget - totalSpent))}
+          {t('budgetRemaining')}: {formatIDR(Math.max(0, totalBudget - totalSpent))}
         </p>
       </div>
 
@@ -114,7 +116,7 @@ export default function BudgetManager({
                   <div>
                     <p className="text-sm font-medium text-vault-text">{cat.name}</p>
                     <p className="text-xs text-vault-text-dim font-mono">
-                      {budget ? `${formatIDR(spent)} / ${formatIDR(budget.amount)}` : 'Belum di-set'}
+                      {budget ? `${formatIDR(spent)} / ${formatIDR(budget.amount)}` : t('budgetNotSet')}
                     </p>
                   </div>
                 </div>
@@ -130,7 +132,7 @@ export default function BudgetManager({
                     }}
                     className="text-vault-text-dim hover:text-vault-gold text-xs font-mono px-2 py-1 rounded border border-vault-border hover:border-vault-gold/30 transition-all"
                   >
-                    {budget ? 'Edit' : '+ Set'}
+                    {budget ? t('budgetEdit') : t('budgetSetBtn')}
                   </button>
                 </div>
               </div>
@@ -142,13 +144,13 @@ export default function BudgetManager({
                     inputMode="numeric"
                     value={inputVal}
                     onChange={e => setInputVal(e.target.value.replace(/[^0-9]/g, ''))}
-                    placeholder="Jumlah budget..."
+                    placeholder={t('budgetAmountPlaceholder')}
                     autoFocus
                     className="flex-1 bg-vault-surface border border-vault-border rounded-lg px-3 py-2 text-sm font-mono text-vault-text placeholder-vault-muted focus:outline-none focus:border-vault-gold/50"
                   />
                   <button onClick={() => handleSave(cat.id)} disabled={isPending}
                     className="bg-vault-gold text-vault-bg rounded-lg px-3 py-2 text-xs font-mono font-semibold hover:bg-vault-gold-light transition-all disabled:opacity-50">
-                    {isPending ? '...' : 'OK'}
+                    {isPending ? '...' : t('ok')}
                   </button>
                   <button onClick={() => setEditing(null)}
                     className="text-vault-text-dim hover:text-vault-text px-2 text-xs font-mono">✕</button>
@@ -162,7 +164,7 @@ export default function BudgetManager({
                     <p className={`text-xs font-mono ${pct > 100 ? 'text-vault-red' : 'text-vault-text-dim'}`}>{pct}%</p>
                     {pct > 80 && (
                       <p className={`text-xs font-mono ${pct > 100 ? 'text-vault-red' : 'text-amber-400'}`}>
-                        {pct > 100 ? '⚠ Over budget!' : '⚠ Hampir habis'}
+                        {pct > 100 ? t('budgetOver') : t('budgetAlmostOut')}
                       </p>
                     )}
                   </div>

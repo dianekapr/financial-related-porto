@@ -6,15 +6,15 @@
       "static/css/app/layout.css",
       "static/chunks/app/layout.js"
     ],
+    "/dashboard/page": [
+      "static/chunks/webpack.js",
+      "static/chunks/main-app.js",
+      "static/chunks/app/dashboard/page.js"
+    ],
     "/dashboard/layout": [
       "static/chunks/webpack.js",
       "static/chunks/main-app.js",
       "static/chunks/app/dashboard/layout.js"
-    ],
-    "/dashboard/analytics/page": [
-      "static/chunks/webpack.js",
-      "static/chunks/main-app.js",
-      "static/chunks/app/dashboard/analytics/page.js"
     ],
     "/dashboard/wallets/page": [
       "static/chunks/webpack.js",
@@ -26,15 +26,15 @@
       "static/chunks/main-app.js",
       "static/chunks/app/dashboard/budget/page.js"
     ],
-    "/dashboard/transactions/page": [
+    "/dashboard/analytics/page": [
       "static/chunks/webpack.js",
       "static/chunks/main-app.js",
-      "static/chunks/app/dashboard/transactions/page.js"
+      "static/chunks/app/dashboard/analytics/page.js"
     ],
-    "/dashboard/wallets/[id]/page": [
+    "/dashboard/settings/page": [
       "static/chunks/webpack.js",
       "static/chunks/main-app.js",
-      "static/chunks/app/dashboard/wallets/[id]/page.js"
+      "static/chunks/app/dashboard/settings/page.js"
     ]
   }
 }

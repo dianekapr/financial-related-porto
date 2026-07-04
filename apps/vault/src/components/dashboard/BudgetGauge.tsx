@@ -1,6 +1,7 @@
 'use client'
 import type { Budget, Transaction } from '@portfolio/supabase'
 import { formatIDR } from '../../lib/money'
+import { useLocale } from '../LocaleProvider'
 
 function CircleGauge({ pct, color }: { pct: number; color: string }) {
   const r = 20
@@ -34,12 +35,14 @@ function CircleGauge({ pct, color }: { pct: number; color: string }) {
 }
 
 export default function BudgetGauge({ budgets, transactions }: { budgets: Budget[]; transactions: Transaction[] }) {
+  const { t } = useLocale()
+
   if (budgets.length === 0) {
     return (
       <div className="bg-vault-card rounded-2xl border border-vault-border p-5 h-full flex flex-col">
-        <p className="font-display text-vault-gold tracking-widest text-lg mb-4">BUDGET</p>
+        <p className="font-display text-vault-gold tracking-widest text-lg mb-4">{t('budgetGaugeTitle')}</p>
         <div className="flex-1 flex items-center justify-center text-center">
-          <p className="text-vault-text-dim text-sm font-mono">Belum ada budget.<br />Set budget di halaman Budget.</p>
+          <p className="text-vault-text-dim text-sm font-mono">{t('budgetGaugeEmpty1')}<br />{t('budgetGaugeEmpty2')}</p>
         </div>
       </div>
     )
@@ -47,7 +50,7 @@ export default function BudgetGauge({ budgets, transactions }: { budgets: Budget
 
   return (
     <div className="bg-vault-card rounded-2xl border border-vault-border p-5 space-y-3">
-      <p className="font-display text-vault-gold tracking-widest text-lg">BUDGET</p>
+      <p className="font-display text-vault-gold tracking-widest text-lg">{t('budgetGaugeTitle')}</p>
 
       {budgets.map((b) => {
         const spent = transactions

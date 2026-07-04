@@ -3,11 +3,14 @@ vault
 ✅tambahin fitur wallet. karena kan sekarang ini orang nyimpen duit ga hanya di satu tempat.
 ✅nanti bisa edit saldo tiap wallet, add wallet. misalnya si user ada simpen cash, e wallet, bank a, dan bank c gt 
 ✅kategorinya ke looping 2 kali ini di bagian modal tambah transaksi
-bikin biar user bisa ganti tema aplikasi. bukan sekedar light and dark tapi tema yg color palette itu loh.
+✅bikin biar user bisa ganti tema aplikasi. bukan sekedar light and dark tapi tema yg color palette itu loh.
 jangan ada emoji, pake icon dr react aja atau apa kek pokonya jgn emoji
 tipe dropdown nya bisa ga jgn yg glossy gt
 
 ✅dibikin biar masing2 walletnya nnt tu bisa dipencet biar keliatan detail/list transaksi yg terjadi di wallet tsb
 
 bisa pilih bahasa
-diagram persentase utk liat lebih banyak ngabisin uang di kategori apa (bisa liat as whole, per wallet, ataupun per rentang waktu tertentu)
+✅diagram persentase utk liat lebih banyak ngabisin uang di kategori apa (bisa liat as whole, per wallet, ataupun per rentang waktu tertentu)
+
+pas user change language to english harusnya yang kategori itu jg ke ganti jd pake inggris ga si,,
+untuk theme itu maksudku ga cuma changing 1 color gt loh... 

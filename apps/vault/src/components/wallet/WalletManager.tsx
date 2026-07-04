@@ -5,12 +5,14 @@ import Link from 'next/link'
 import { createClient } from '@portfolio/supabase'
 import type { Wallet } from '@portfolio/supabase'
 import { formatIDR } from '../../lib/money'
+import { useLocale } from '../LocaleProvider'
 
 const COLORS = ['#C9A84C', '#8B5CF6', '#06B6D4', '#22C55E', '#F97316', '#E03E3E']
 
 export default function WalletManager({ wallets }: { wallets: Wallet[] }) {
   const router = useRouter()
   const supabase = createClient()
+  const { t } = useLocale()
   const [isPending, startTransition] = useTransition()
 
   const [showAdd, setShowAdd] = useState(false)
@@ -59,7 +61,7 @@ export default function WalletManager({ wallets }: { wallets: Wallet[] }) {
   }
 
   const handleDelete = (walletId: string) => {
-    if (!confirm('Hapus wallet ini? Transaksi yang terkait tetap ada, tapi ga lagi terhubung ke wallet manapun.')) return
+    if (!confirm(t('confirmDeleteWallet'))) return
     startTransition(async () => {
       await supabase.from('wallets').delete().eq('id', walletId)
       router.refresh()
@@ -70,7 +72,7 @@ export default function WalletManager({ wallets }: { wallets: Wallet[] }) {
     <div className="space-y-4">
       {/* Total overview */}
       <div className="bg-vault-card border border-vault-border rounded-2xl p-5">
-        <p className="text-vault-text-dim text-xs font-mono uppercase tracking-widest">Total Saldo Semua Wallet</p>
+        <p className="text-vault-text-dim text-xs font-mono uppercase tracking-widest">{t('walletsTotalBalance')}</p>
         <p className="font-mono text-2xl text-vault-gold font-semibold mt-1">{formatIDR(totalBalance)}</p>
       </div>
 
@@ -95,7 +97,7 @@ export default function WalletManager({ wallets }: { wallets: Wallet[] }) {
                     onClick={() => { setEditingId(w.id); setEditValue(String(w.balance)) }}
                     className="text-vault-text-dim hover:text-vault-gold text-xs font-mono px-2 py-1 rounded border border-vault-border hover:border-vault-gold/30 transition-all"
                   >
-                    Edit
+                    {t('budgetEdit')}
                   </button>
                 </div>
               </div>
@@ -107,13 +109,13 @@ export default function WalletManager({ wallets }: { wallets: Wallet[] }) {
                     inputMode="numeric"
                     value={editValue}
                     onChange={e => setEditValue(e.target.value.replace(/[^0-9]/g, ''))}
-                    placeholder="Saldo baru..."
+                    placeholder={t('walletBalancePlaceholder')}
                     autoFocus
                     className="flex-1 bg-vault-surface border border-vault-border rounded-lg px-3 py-2 text-sm font-mono text-vault-text placeholder-vault-muted focus:outline-none focus:border-vault-gold/50"
                   />
                   <button onClick={() => handleSaveBalance(w.id)} disabled={isPending}
                     className="bg-vault-gold text-vault-bg rounded-lg px-3 py-2 text-xs font-mono font-semibold hover:bg-vault-gold-light transition-all disabled:opacity-50">
-                    {isPending ? '...' : 'OK'}
+                    {isPending ? '...' : t('ok')}
                   </button>
                   <button onClick={() => setEditingId(null)}
                     className="text-vault-text-dim hover:text-vault-text px-2 text-xs font-mono">✕</button>
@@ -127,12 +129,12 @@ export default function WalletManager({ wallets }: { wallets: Wallet[] }) {
       {/* Add wallet */}
       {showAdd ? (
         <form onSubmit={handleAdd} className="bg-vault-card border border-vault-border rounded-2xl p-4 space-y-3">
-          <p className="text-vault-text-dim text-xs font-mono uppercase tracking-widest">Wallet Baru</p>
+          <p className="text-vault-text-dim text-xs font-mono uppercase tracking-widest">{t('walletNewTitle')}</p>
           <input
             type="text"
             value={newName}
             onChange={e => setNewName(e.target.value)}
-            placeholder="Nama wallet (Cash, GoPay, BCA...)"
+            placeholder={t('walletNamePlaceholder')}
             autoFocus
             className="w-full bg-vault-surface border border-vault-border rounded-lg px-3 py-2.5 text-sm text-vault-text placeholder-vault-muted focus:outline-none focus:border-vault-gold/50"
           />
@@ -141,7 +143,7 @@ export default function WalletManager({ wallets }: { wallets: Wallet[] }) {
             inputMode="numeric"
             value={newBalance}
             onChange={e => setNewBalance(e.target.value.replace(/[^0-9]/g, ''))}
-            placeholder="Saldo awal (opsional)"
+            placeholder={t('walletInitialBalancePlaceholder')}
             className="w-full bg-vault-surface border border-vault-border rounded-lg px-3 py-2.5 text-sm font-mono text-vault-text placeholder-vault-muted focus:outline-none focus:border-vault-gold/50"
           />
           <div className="flex gap-2">
@@ -158,11 +160,11 @@ export default function WalletManager({ wallets }: { wallets: Wallet[] }) {
           <div className="flex gap-2">
             <button type="submit" disabled={isPending || !newName.trim()}
               className="flex-1 bg-vault-gold text-vault-bg rounded-lg py-2.5 text-sm font-mono font-semibold hover:bg-vault-gold-light transition-all disabled:opacity-50">
-              {isPending ? 'Menyimpan...' : 'Simpan Wallet'}
+              {isPending ? t('saving') : t('walletSaveBtn')}
             </button>
             <button type="button" onClick={() => setShowAdd(false)}
               className="px-4 text-vault-text-dim hover:text-vault-text transition-colors text-sm font-mono">
-              Batal
+              {t('cancel')}
             </button>
           </div>
         </form>
@@ -171,7 +173,7 @@ export default function WalletManager({ wallets }: { wallets: Wallet[] }) {
           onClick={() => setShowAdd(true)}
           className="w-full border-2 border-dashed border-vault-border rounded-2xl py-4 text-vault-text-dim hover:border-vault-gold/40 hover:text-vault-gold transition-all font-mono text-sm"
         >
-          + Tambah Wallet
+          {t('walletAddBtn')}
         </button>
       )}
     </div>

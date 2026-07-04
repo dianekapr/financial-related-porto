@@ -3,10 +3,13 @@ import { notFound } from 'next/navigation'
 import Link from 'next/link'
 import WalletTransactions from '@/components/wallet/WalletTransactions'
 import { formatIDR } from '@/lib/money'
+import { t } from '@/lib/i18n'
+import { getServerLocale } from '@/lib/getServerLocale'
 
 export default async function WalletDetailPage({ params }: { params: { id: string } }) {
   const supabase = createServerSupabaseClient()
   const { data: { session } } = await supabase.auth.getSession()
+  const locale = getServerLocale()
 
   const { data: wallet } = await supabase
     .from('wallets')
@@ -28,7 +31,7 @@ export default async function WalletDetailPage({ params }: { params: { id: strin
     <div className="space-y-6">
       <div>
         <Link href="/dashboard/wallets" className="text-vault-text-dim text-xs font-mono hover:text-vault-gold transition-colors">
-          ← Wallet
+          {t(locale, 'walletBackLink')}
         </Link>
         <div className="flex items-center gap-2.5 mt-2">
           <div className="w-4 h-4 rounded-full flex-shrink-0" style={{ backgroundColor: wallet.color }} />

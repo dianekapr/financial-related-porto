@@ -1,15 +1,18 @@
 import { createServerSupabaseClient } from '../../../../../packages/supabase/src/server'
 import { format } from 'date-fns'
-import { id as localeId } from 'date-fns/locale'
 import SummaryCards from '@/components/dashboard/SummaryCards'
 import TransactionTicker from '@/components/dashboard/TransactionTicker'
 import BudgetGauge from '@/components/dashboard/BudgetGauge'
 import MonthlyChart from '@/components/dashboard/MonthlyChart'
 import { formatIDR } from '@/lib/money'
+import { t } from '@/lib/i18n'
+import { getServerLocale } from '@/lib/getServerLocale'
+import { getDateLocale } from '@/lib/dateLocale'
 
 export default async function DashboardPage() {
   const supabase = createServerSupabaseClient()
   const { data: { session } } = await supabase.auth.getSession()
+  const locale = getServerLocale()
 
   const now = new Date()
   const month = now.getMonth() + 1
@@ -28,8 +31,8 @@ export default async function DashboardPage() {
     .order('date', { ascending: false })
 
   // Compute summary
-  const income = transactions?.filter(t => t.type === 'income').reduce((s, t) => s + t.amount, 0) ?? 0
-  const expense = transactions?.filter(t => t.type === 'expense').reduce((s, t) => s + t.amount, 0) ?? 0
+  const income = transactions?.filter(tx => tx.type === 'income').reduce((s, tx) => s + tx.amount, 0) ?? 0
+  const expense = transactions?.filter(tx => tx.type === 'expense').reduce((s, tx) => s + tx.amount, 0) ?? 0
 
   // Fetch budgets with spending
   const { data: budgets } = await supabase
@@ -53,14 +56,14 @@ export default async function DashboardPage() {
       <div className="flex items-end justify-between">
         <div>
           <p className="text-vault-text-dim text-sm font-mono uppercase tracking-widest">
-            {format(now, 'MMMM yyyy', { locale: localeId })}
+            {format(now, 'MMMM yyyy', { locale: getDateLocale(locale) })}
           </p>
           <h1 className="font-display text-4xl md:text-5xl text-vault-text tracking-wider mt-1">
-            RINGKASAN
+            {t(locale, 'dashboardSummary')}
           </h1>
         </div>
         <div className="text-right">
-          <p className="text-vault-text-dim text-xs font-mono">saldo bulan ini</p>
+          <p className="text-vault-text-dim text-xs font-mono">{t(locale, 'dashboardBalance')}</p>
           <p className={`font-mono text-2xl font-semibold ${income - expense >= 0 ? 'text-vault-gold' : 'text-vault-red'}`}>
             {formatIDR(income - expense)}
           </p>

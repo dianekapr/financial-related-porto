@@ -3,8 +3,9 @@ import { useState, useTransition } from 'react'
 import { useRouter } from 'next/navigation'
 import type { Transaction } from '@portfolio/supabase'
 import { format } from 'date-fns'
-import { id as localeId } from 'date-fns/locale'
 import { formatIDR } from '../../lib/money'
+import { useLocale } from '../LocaleProvider'
+import { getDateLocale } from '../../lib/dateLocale'
 
 function groupByDate(txs: Transaction[]) {
   const groups: Record<string, Transaction[]> = {}
@@ -17,11 +18,12 @@ function groupByDate(txs: Transaction[]) {
 
 export default function WalletTransactions({ transactions }: { transactions: Transaction[] }) {
   const router = useRouter()
+  const { t, locale } = useLocale()
   const [deleting, setDeleting] = useState<string | null>(null)
   const [, startTransition] = useTransition()
 
   const handleDelete = async (id: string) => {
-    if (!confirm('Hapus transaksi ini?')) return
+    if (!confirm(t('confirmDeleteTx'))) return
     setDeleting(id)
     await fetch(`/api/transactions?id=${id}`, { method: 'DELETE' })
     startTransition(() => { router.refresh() })
@@ -33,7 +35,7 @@ export default function WalletTransactions({ transactions }: { transactions: Tra
   if (grouped.length === 0) {
     return (
       <div className="bg-vault-card border border-vault-border rounded-2xl p-12 text-center">
-        <p className="text-vault-text-dim font-mono">Belum ada transaksi di wallet ini</p>
+        <p className="text-vault-text-dim font-mono">{t('walletEmptyTransactions')}</p>
       </div>
     )
   }
@@ -43,7 +45,7 @@ export default function WalletTransactions({ transactions }: { transactions: Tra
       {grouped.map(([date, txs]) => (
         <div key={date}>
           <p className="text-vault-text-dim text-xs font-mono uppercase tracking-widest mb-2 px-1">
-            {format(new Date(date + 'T00:00:00'), 'EEEE, d MMMM yyyy', { locale: localeId })}
+            {format(new Date(date + 'T00:00:00'), 'EEEE, d MMMM yyyy', { locale: getDateLocale(locale) })}
           </p>
           <div className="bg-vault-card border border-vault-border rounded-2xl divide-y divide-vault-border overflow-hidden">
             {txs.map(tx => (
@@ -53,7 +55,7 @@ export default function WalletTransactions({ transactions }: { transactions: Tra
                   {tx.category?.icon ?? (tx.type === 'income' ? '↑' : '↓')}
                 </div>
                 <div className="flex-1 min-w-0">
-                  <p className="text-sm font-medium text-vault-text truncate">{tx.note ?? tx.category?.name ?? 'Transaksi'}</p>
+                  <p className="text-sm font-medium text-vault-text truncate">{tx.note ?? tx.category?.name ?? t('fallbackTxName')}</p>
                   {tx.category && <p className="text-xs text-vault-text-dim font-mono mt-0.5">{tx.category.name}</p>}
                 </div>
                 <p className={`font-mono text-sm font-semibold flex-shrink-0 ${tx.type === 'income' ? 'text-vault-gold' : 'text-vault-red'}`}>

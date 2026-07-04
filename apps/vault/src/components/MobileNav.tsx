@@ -1,17 +1,20 @@
 'use client'
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
-
-const NAV = [
-  { href: '/dashboard', icon: '◈', label: 'Home' },
-  { href: '/dashboard/transactions', icon: '↕', label: 'Transaksi' },
-  { href: '/dashboard/wallets', icon: '▣', label: 'Wallet' },
-  { href: '/dashboard/budget', icon: '◎', label: 'Budget' },
-  { href: '/dashboard/analytics', icon: '▲', label: 'Analitik' },
-]
+import { useLocale } from './LocaleProvider'
 
 export default function MobileNav() {
   const pathname = usePathname()
+  const { t } = useLocale()
+
+  const NAV = [
+    { href: '/dashboard', icon: '◈', label: t('navHome') },
+    { href: '/dashboard/transactions', icon: '↕', label: t('navTransactions') },
+    { href: '/dashboard/wallets', icon: '▣', label: t('navWallets') },
+    { href: '/dashboard/budget', icon: '◎', label: t('navBudget') },
+    { href: '/dashboard/analytics', icon: '▲', label: t('navAnalytics') },
+    { href: '/dashboard/settings', icon: '⚙', label: t('navSettings') },
+  ]
 
   return (
     <nav className="md:hidden fixed bottom-0 left-0 right-0 z-40 bg-vault-surface/90 backdrop-blur-md border-t border-vault-border px-2 pb-safe">

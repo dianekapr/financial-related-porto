@@ -5,25 +5,11 @@ import {
   LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend,
 } from 'recharts'
 import { format, subMonths, startOfMonth, endOfMonth, startOfYear } from 'date-fns'
-import { id as localeId } from 'date-fns/locale'
 import type { Transaction, Wallet } from '@portfolio/supabase'
 import { formatIDR } from '../../lib/money'
 import Select from '../ui/Select'
-
-function formatShort(n: number) {
-  if (n >= 1_000_000) return `${(n / 1_000_000).toFixed(1)}jt`
-  if (n >= 1_000) return `${(n / 1_000).toFixed(0)}rb`
-  return String(n)
-}
-
-const RANGES = [
-  { value: 'month', label: 'Bulan Ini' },
-  { value: '3m', label: '3 Bulan Terakhir' },
-  { value: '6m', label: '6 Bulan Terakhir' },
-  { value: 'year', label: 'Tahun Ini' },
-  { value: 'all', label: 'Semua Waktu' },
-  { value: 'custom', label: 'Rentang Custom' },
-] as const
+import { useLocale } from '../LocaleProvider'
+import { getDateLocale } from '../../lib/dateLocale'
 
 function rangeToDates(range: string, now: Date): { start: Date | null; end: Date | null } {
   switch (range) {
@@ -36,7 +22,23 @@ function rangeToDates(range: string, now: Date): { start: Date | null; end: Date
 }
 
 export default function AnalyticsCharts({ transactions, wallets }: { transactions: Transaction[]; wallets: Wallet[] }) {
+  const { t, locale } = useLocale()
   const now = new Date()
+
+  const RANGES = [
+    { value: 'month', label: t('analyticsRangeMonth') },
+    { value: '3m', label: t('analyticsRange3m') },
+    { value: '6m', label: t('analyticsRange6m') },
+    { value: 'year', label: t('analyticsRangeYear') },
+    { value: 'all', label: t('analyticsRangeAll') },
+    { value: 'custom', label: t('analyticsRangeCustom') },
+  ] as const
+
+  function formatShort(n: number) {
+    if (n >= 1_000_000) return `${(n / 1_000_000).toFixed(1)}${t('million')}`
+    if (n >= 1_000) return `${(n / 1_000).toFixed(0)}${t('thousand')}`
+    return String(n)
+  }
 
   const [walletFilter, setWalletFilter] = useState('all')
   const [range, setRange] = useState<typeof RANGES[number]['value']>('month')
@@ -44,7 +46,7 @@ export default function AnalyticsCharts({ transactions, wallets }: { transaction
   const [customEnd, setCustomEnd] = useState(format(now, 'yyyy-MM-dd'))
 
   const walletFiltered = useMemo(
-    () => walletFilter === 'all' ? transactions : transactions.filter(t => t.wallet_id === walletFilter),
+    () => walletFilter === 'all' ? transactions : transactions.filter(tx => tx.wallet_id === walletFilter),
     [transactions, walletFilter]
   )
 
@@ -54,13 +56,13 @@ export default function AnalyticsCharts({ transactions, wallets }: { transaction
       ? { start: new Date(customStart), end: new Date(customEnd) }
       : rangeToDates(range, now)
     if (!start || !end) return walletFiltered
-    return walletFiltered.filter(t => {
-      const d = new Date(t.date)
+    return walletFiltered.filter(tx => {
+      const d = new Date(tx.date)
       return d >= start && d <= end
     })
   }, [walletFiltered, range, customStart, customEnd])
 
-  const expenses = filtered.filter(t => t.type === 'expense')
+  const expenses = filtered.filter(tx => tx.type === 'expense')
 
   const categoryMap: Record<string, { amount: number; icon: string; color: string }> = {}
   for (const tx of expenses) {
@@ -72,7 +74,7 @@ export default function AnalyticsCharts({ transactions, wallets }: { transaction
     .map(([name, d]) => ({ name, ...d }))
     .sort((a, b) => b.amount - a.amount)
 
-  const totalExpense = expenses.reduce((s, t) => s + t.amount, 0)
+  const totalExpense = expenses.reduce((s, tx) => s + tx.amount, 0)
 
   // Monthly trend (last 6 months) — respects the wallet filter, but stays
   // on its own fixed window since it's inherently a month-over-month view
@@ -80,19 +82,19 @@ export default function AnalyticsCharts({ transactions, wallets }: { transaction
     const d = subMonths(now, 5 - i)
     const start = startOfMonth(d)
     const end = endOfMonth(d)
-    const txs = walletFiltered.filter(t => {
-      const td = new Date(t.date)
+    const txs = walletFiltered.filter(tx => {
+      const td = new Date(tx.date)
       return td >= start && td <= end
     })
     return {
-      name: format(d, 'MMM', { locale: localeId }),
-      income: txs.filter(t => t.type === 'income').reduce((s, t) => s + t.amount, 0),
-      expense: txs.filter(t => t.type === 'expense').reduce((s, t) => s + t.amount, 0),
+      name: format(d, 'MMM', { locale: getDateLocale(locale) }),
+      income: txs.filter(tx => tx.type === 'income').reduce((s, tx) => s + tx.amount, 0),
+      expense: txs.filter(tx => tx.type === 'expense').reduce((s, tx) => s + tx.amount, 0),
     }
   })
 
   const rangeLabel = RANGES.find(r => r.value === range)?.label ?? ''
-  const walletLabel = walletFilter === 'all' ? 'Semua Wallet' : wallets.find(w => w.id === walletFilter)?.name ?? ''
+  const walletLabel = walletFilter === 'all' ? t('analyticsAllWallets') : wallets.find(w => w.id === walletFilter)?.name ?? ''
 
   const CustomPieTooltip = ({ active, payload }: any) => {
     if (!active || !payload?.length) return null
@@ -111,15 +113,15 @@ export default function AnalyticsCharts({ transactions, wallets }: { transaction
       {/* Filters */}
       <div className="bg-vault-card border border-vault-border rounded-2xl p-4 flex flex-wrap items-center gap-3">
         <div>
-          <label className="text-vault-text-dim text-[10px] font-mono uppercase tracking-widest block mb-1">Wallet</label>
+          <label className="text-vault-text-dim text-[10px] font-mono uppercase tracking-widest block mb-1">{t('analyticsWallet')}</label>
           <Select
             value={walletFilter}
             onChange={setWalletFilter}
-            options={[{ value: 'all', label: 'Semua Wallet' }, ...wallets.map(w => ({ value: w.id, label: w.name }))]}
+            options={[{ value: 'all', label: t('analyticsAllWallets') }, ...wallets.map(w => ({ value: w.id, label: w.name }))]}
           />
         </div>
         <div>
-          <label className="text-vault-text-dim text-[10px] font-mono uppercase tracking-widest block mb-1">Rentang Waktu</label>
+          <label className="text-vault-text-dim text-[10px] font-mono uppercase tracking-widest block mb-1">{t('analyticsTimeRange')}</label>
           <Select
             value={range}
             onChange={v => setRange(v as typeof range)}
@@ -129,7 +131,7 @@ export default function AnalyticsCharts({ transactions, wallets }: { transaction
         {range === 'custom' && (
           <div className="flex items-end gap-2">
             <div>
-              <label className="text-vault-text-dim text-[10px] font-mono uppercase tracking-widest block mb-1">Dari</label>
+              <label className="text-vault-text-dim text-[10px] font-mono uppercase tracking-widest block mb-1">{t('analyticsFrom')}</label>
               <input
                 type="date"
                 value={customStart}
@@ -138,7 +140,7 @@ export default function AnalyticsCharts({ transactions, wallets }: { transaction
               />
             </div>
             <div>
-              <label className="text-vault-text-dim text-[10px] font-mono uppercase tracking-widest block mb-1">Sampai</label>
+              <label className="text-vault-text-dim text-[10px] font-mono uppercase tracking-widest block mb-1">{t('analyticsTo')}</label>
               <input
                 type="date"
                 value={customEnd}
@@ -154,12 +156,12 @@ export default function AnalyticsCharts({ transactions, wallets }: { transaction
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         {/* Donut chart */}
         <div className="bg-vault-card border border-vault-border rounded-2xl p-5">
-          <p className="font-display text-vault-gold tracking-widest text-lg mb-1">KATEGORI</p>
+          <p className="font-display text-vault-gold tracking-widest text-lg mb-1">{t('analyticsCategory')}</p>
           <p className="text-vault-text-dim text-xs font-mono mb-4">
-            {walletLabel} · {rangeLabel} · Total: {formatIDR(totalExpense)}
+            {walletLabel} · {rangeLabel} · {t('analyticsTotal')}: {formatIDR(totalExpense)}
           </p>
           {pieData.length === 0 ? (
-            <p className="text-vault-text-dim text-sm font-mono text-center py-8">Belum ada pengeluaran</p>
+            <p className="text-vault-text-dim text-sm font-mono text-center py-8">{t('analyticsNoExpense')}</p>
           ) : (
             <ResponsiveContainer width="100%" height={220}>
               <PieChart>
@@ -201,9 +203,9 @@ export default function AnalyticsCharts({ transactions, wallets }: { transaction
 
         {/* Top spending */}
         <div className="bg-vault-card border border-vault-border rounded-2xl p-5">
-          <p className="font-display text-vault-gold tracking-widest text-lg mb-4">TOP PENGELUARAN</p>
+          <p className="font-display text-vault-gold tracking-widest text-lg mb-4">{t('analyticsTopSpending')}</p>
           {pieData.length === 0 ? (
-            <p className="text-vault-text-dim text-sm font-mono text-center py-8">Belum ada data</p>
+            <p className="text-vault-text-dim text-sm font-mono text-center py-8">{t('analyticsNoData')}</p>
           ) : (
             <div className="space-y-4">
               {pieData.slice(0, 5).map((cat, i) => {
@@ -233,7 +235,7 @@ export default function AnalyticsCharts({ transactions, wallets }: { transaction
 
       {/* Line chart trend */}
       <div className="bg-vault-card border border-vault-border rounded-2xl p-5">
-        <p className="font-display text-vault-gold tracking-widest text-lg mb-1">TREN 6 BULAN</p>
+        <p className="font-display text-vault-gold tracking-widest text-lg mb-1">{t('analyticsTrend')}</p>
         <p className="text-vault-text-dim text-xs font-mono mb-4">{walletLabel}</p>
         <ResponsiveContainer width="100%" height={220}>
           <LineChart data={trendData}>
@@ -245,8 +247,8 @@ export default function AnalyticsCharts({ transactions, wallets }: { transaction
               labelStyle={{ color: '#888' }}
               formatter={(v: number) => formatIDR(v)}
             />
-            <Line type="monotone" dataKey="income" name="Masuk" stroke="#C9A84C" strokeWidth={2} dot={{ fill: '#C9A84C', r: 4 }} activeDot={{ r: 6 }} />
-            <Line type="monotone" dataKey="expense" name="Keluar" stroke="#E03E3E" strokeWidth={2} dot={{ fill: '#E03E3E', r: 4 }} activeDot={{ r: 6 }} />
+            <Line type="monotone" dataKey="income" name={t('in')} stroke="#C9A84C" strokeWidth={2} dot={{ fill: '#C9A84C', r: 4 }} activeDot={{ r: 6 }} />
+            <Line type="monotone" dataKey="expense" name={t('out')} stroke="#E03E3E" strokeWidth={2} dot={{ fill: '#E03E3E', r: 4 }} activeDot={{ r: 6 }} />
           </LineChart>
         </ResponsiveContainer>
       </div>

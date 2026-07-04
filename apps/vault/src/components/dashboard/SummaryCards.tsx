@@ -1,5 +1,6 @@
 'use client'
 import { formatIDR } from '../../lib/money'
+import { useLocale } from '../LocaleProvider'
 
 interface Props {
   income: number
@@ -8,11 +9,12 @@ interface Props {
 }
 
 export default function SummaryCards({ income, expense, txCount }: Props) {
+  const { t } = useLocale()
   const savingRate = income > 0 ? Math.round(((income - expense) / income) * 100) : 0
 
   const cards = [
     {
-      label: 'Total Pemasukan',
+      label: t('summaryTotalIncome'),
       value: formatIDR(income),
       icon: '↑',
       color: 'text-vault-gold',
@@ -20,7 +22,7 @@ export default function SummaryCards({ income, expense, txCount }: Props) {
       indicator: 'bg-vault-gold',
     },
     {
-      label: 'Total Pengeluaran',
+      label: t('summaryTotalExpense'),
       value: formatIDR(expense),
       icon: '↓',
       color: 'text-vault-red',
@@ -28,7 +30,7 @@ export default function SummaryCards({ income, expense, txCount }: Props) {
       indicator: 'bg-vault-red',
     },
     {
-      label: 'Saving Rate',
+      label: t('summarySavingRate'),
       value: `${savingRate}%`,
       icon: '◉',
       color: savingRate > 0 ? 'text-green-400' : 'text-vault-red',
@@ -36,7 +38,7 @@ export default function SummaryCards({ income, expense, txCount }: Props) {
       indicator: savingRate > 0 ? 'bg-green-400' : 'bg-vault-red',
     },
     {
-      label: 'Transaksi',
+      label: t('summaryTransactions'),
       value: `${txCount}×`,
       icon: '≡',
       color: 'text-vault-text-dim',

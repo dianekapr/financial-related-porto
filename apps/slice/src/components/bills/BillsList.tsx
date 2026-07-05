@@ -8,6 +8,8 @@ import { format } from 'date-fns'
 import { id as localeId } from 'date-fns/locale'
 import CreateBillModal from './CreateBillModal'
 import { formatMoney } from '../../lib/money'
+import { AvatarIcon } from '../../lib/avatarIcons'
+import { Plus, Receipt, Loader2, Trash2 } from 'lucide-react'
 
 type BillWithMembers = Bill & { members: BillMember[] }
 
@@ -40,13 +42,13 @@ export default function BillsList({ bills }: { bills: BillWithMembers[] }) {
         onClick={() => setShowCreate(true)}
         className="w-full bg-slice-orange text-white rounded-2xl py-4 font-display text-xl tracking-wide hover:bg-slice-orange-light active:scale-[0.98] transition-all shadow-lg shadow-orange-200 flex items-center justify-center gap-2"
       >
-        <span className="text-2xl">+</span> Buat Tagihan Baru
+        <Plus size={22} /> Buat Tagihan Baru
       </button>
 
       {/* Bills list */}
       {bills.length === 0 ? (
         <div className="text-center py-16">
-          <div className="text-6xl mb-4">🧾</div>
+          <Receipt size={56} className="mx-auto mb-4 text-slice-muted" />
           <p className="text-slice-muted font-receipt">Belum ada tagihan aktif.</p>
           <p className="text-slice-text-dim text-sm mt-1">Buat tagihan pertama kamu!</p>
         </div>
@@ -82,10 +84,10 @@ export default function BillsList({ bills }: { bills: BillWithMembers[] }) {
                       <div
                         key={m.id}
                         title={m.name}
-                        className="w-7 h-7 rounded-full flex items-center justify-center text-sm border-2 border-white -ml-1 first:ml-0"
-                        style={{ backgroundColor: `${m.color}30`, borderColor: m.color }}
+                        className="w-7 h-7 rounded-full flex items-center justify-center border-2 border-white -ml-1 first:ml-0"
+                        style={{ backgroundColor: `${m.color}30`, borderColor: m.color, color: m.color }}
                       >
-                        {m.avatar_emoji}
+                        <AvatarIcon icon={m.avatar_emoji} size={14} />
                       </div>
                     ))}
                     {bill.members.length > 6 && (
@@ -103,7 +105,7 @@ export default function BillsList({ bills }: { bills: BillWithMembers[] }) {
                 title="Hapus tagihan"
                 className="absolute top-4 right-4 w-7 h-7 flex items-center justify-center rounded-full text-slice-text-dim hover:text-red-500 hover:bg-red-50 transition-colors disabled:opacity-50"
               >
-                {deletingId === bill.id ? '⏳' : '🗑️'}
+                {deletingId === bill.id ? <Loader2 size={16} className="animate-spin" /> : <Trash2 size={16} />}
               </button>
             </div>
           ))}

@@ -4,6 +4,8 @@ import { useRouter } from 'next/navigation'
 import { createClient } from '@portfolio/supabase'
 import type { Bill, BillMember, BillItem, BillItemAssignment } from '@portfolio/supabase'
 import { formatMoney } from '../../lib/money'
+import { AvatarIcon } from '../../lib/avatarIcons'
+import { PartyPopper, MessageCircle, CircleCheck } from 'lucide-react'
 
 type MemberWithTotal = BillMember & { total: number }
 type ItemWithAssignments = BillItem & { assignments: (BillItemAssignment & { member: BillMember | null })[] }
@@ -76,7 +78,7 @@ async function buildReceiptImage(
   ctx.fillStyle = colors.dark
   ctx.font = '700 30px "Fredoka One", sans-serif'
   ctx.textBaseline = 'alphabetic'
-  ctx.fillText(`${member.avatar_emoji} ${member.name}`, padX, 66)
+  ctx.fillText(member.name, padX, 66)
   ctx.font = '400 16px "Courier Prime", monospace'
   ctx.fillStyle = colors.muted
   ctx.fillText(`Tagihan "${bill.title}" · ${bill.date}`, padX, 96)
@@ -136,7 +138,7 @@ async function buildReceiptImage(
     ctx.fillRect(padX - 8, y - 34, width - (padX - 8) * 2, 80)
     ctx.font = '400 15px "Courier Prime", monospace'
     ctx.fillStyle = colors.muted
-    ctx.fillText(`Transfer ke ${payer.avatar_emoji} ${payer.name}`, padX, y)
+    ctx.fillText(`Transfer ke ${payer.name}`, padX, y)
     ctx.font = '700 26px "Fredoka One", sans-serif'
     ctx.fillStyle = colors.orange
     ctx.fillText(formatMoney(amount, bill.currency), padX, y + 34)
@@ -146,7 +148,7 @@ async function buildReceiptImage(
   ctx.font = '400 13px "Courier Prime", monospace'
   ctx.fillStyle = colors.muted
   ctx.textAlign = 'center'
-  ctx.fillText('Dibuat pake SLICE — Split bill app 🍕', width / 2, height - 24)
+  ctx.fillText('Dibuat pake SLICE — Split bill app', width / 2, height - 24)
   ctx.textAlign = 'left'
 
   return new Promise(resolve => canvas.toBlob(resolve, 'image/png'))
@@ -180,9 +182,9 @@ export default function SettleModal({
 
   const shareToWA = async (from: MemberWithTotal, amount: number) => {
     if (!payer) return
-    const text = `Hei ${from.name}! Tagihan "${bill.title}" udah dihitung nih 🧾\n` +
-      `Kamu perlu transfer ${formatMoney(amount, bill.currency)} ke ${payer.name} ya! Rincian di gambar ya 👆\n\n` +
-      `Dibuat pake SLICE — Split bill app 🍕`
+    const text = `Hei ${from.name}! Tagihan "${bill.title}" udah dihitung nih\n` +
+      `Kamu perlu transfer ${formatMoney(amount, bill.currency)} ke ${payer.name} ya! Rincian di gambar ya\n\n` +
+      `Dibuat pake SLICE — Split bill app`
 
     setSharingId(from.id)
     try {
@@ -239,7 +241,7 @@ export default function SettleModal({
               className="w-full border border-slice-border rounded-xl py-2.5 px-3 text-sm focus:outline-none focus:border-slice-orange/60 bg-slice-surface"
             >
               {members.map(m => (
-                <option key={m.id} value={m.id}>{m.avatar_emoji} {m.name}</option>
+                <option key={m.id} value={m.id}>{m.name}</option>
               ))}
             </select>
           </div>
@@ -251,7 +253,7 @@ export default function SettleModal({
               {members.map(m => (
                 <div key={m.id} className="flex items-center justify-between">
                   <div className="flex items-center gap-2">
-                    <span className="text-lg">{m.avatar_emoji}</span>
+                    <AvatarIcon icon={m.avatar_emoji} size={18} style={{ color: m.color }} />
                     <span className="text-sm font-medium">{m.name}</span>
                     {m.id === payerId && (
                       <span className="text-[10px] text-green-600 bg-green-50 border border-green-200 rounded-full px-1.5 py-0.5">bayar duluan</span>
@@ -275,18 +277,18 @@ export default function SettleModal({
                 Pilih siapa yang bayar duluan dulu.
               </p>
             ) : settlements.length === 0 ? (
-              <p className="text-slice-muted text-sm font-receipt text-center py-4">
-                Ga ada yang perlu transfer! 🎉
+              <p className="flex items-center justify-center gap-1.5 text-slice-muted text-sm font-receipt text-center py-4">
+                Ga ada yang perlu transfer! <PartyPopper size={16} />
               </p>
             ) : (
               <div className="space-y-3">
                 {settlements.map((s, i) => (
                   <div key={i} className="bg-slice-surface rounded-2xl p-4 border border-slice-border">
                     <div className="flex items-center gap-2 flex-wrap">
-                      <span className="text-xl">{s.from.avatar_emoji}</span>
+                      <AvatarIcon icon={s.from.avatar_emoji} size={20} style={{ color: s.from.color }} />
                       <span className="font-medium text-sm">{s.from.name}</span>
                       <span className="text-slice-muted text-sm font-receipt">transfer ke</span>
-                      <span className="text-xl">{payer.avatar_emoji}</span>
+                      <AvatarIcon icon={payer.avatar_emoji} size={20} style={{ color: payer.color }} />
                       <span className="font-medium text-sm">{payer.name}</span>
                     </div>
                     <div className="flex items-center justify-between mt-2">
@@ -296,7 +298,7 @@ export default function SettleModal({
                         disabled={sharingId === s.from.id}
                         className="flex items-center gap-1.5 bg-green-500 text-white rounded-xl px-3 py-1.5 text-xs font-medium hover:bg-green-600 transition-all disabled:opacity-60"
                       >
-                        <span>📲</span> {sharingId === s.from.id ? 'Nyiapin...' : `WA ${s.from.name}`}
+                        <MessageCircle size={14} /> {sharingId === s.from.id ? 'Nyiapin...' : `WA ${s.from.name}`}
                       </button>
                     </div>
                   </div>
@@ -309,9 +311,9 @@ export default function SettleModal({
           <button
             onClick={handleSettle}
             disabled={isPending}
-            className="w-full bg-slice-dark text-white rounded-xl py-3.5 font-display text-lg hover:bg-gray-800 active:scale-[0.98] transition-all disabled:opacity-50"
+            className="w-full flex items-center justify-center gap-2 bg-slice-dark text-white rounded-xl py-3.5 font-display text-lg hover:bg-gray-800 active:scale-[0.98] transition-all disabled:opacity-50"
           >
-            {isPending ? 'Menyimpan...' : '✅ Tandai Lunas & Selesai'}
+            {isPending ? 'Menyimpan...' : <><CircleCheck size={20} /> Tandai Lunas & Selesai</>}
           </button>
         </div>
       </div>

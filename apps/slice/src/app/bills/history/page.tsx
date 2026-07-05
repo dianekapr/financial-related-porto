@@ -3,6 +3,8 @@ import Link from 'next/link'
 import { format } from 'date-fns'
 import { id as localeId } from 'date-fns/locale'
 import { formatMoney } from '../../../lib/money'
+import { AvatarIcon } from '../../../lib/avatarIcons'
+import { ClipboardList, Check } from 'lucide-react'
 
 export default async function HistoryPage() {
 const supabase = createServerSupabaseClient()  
@@ -28,7 +30,7 @@ const { data: { session } } = await supabase.auth.getSession()
 
       {!bills?.length ? (
         <div className="text-center py-16">
-          <div className="text-6xl mb-4">📋</div>
+          <ClipboardList size={56} className="mx-auto mb-4 text-slice-muted" />
           <p className="text-slice-muted font-receipt">Belum ada riwayat tagihan lunas.</p>
         </div>
       ) : (
@@ -42,7 +44,7 @@ const { data: { session } } = await supabase.auth.getSession()
               <div className="flex items-start justify-between gap-3">
                 <div>
                   <div className="flex items-center gap-2">
-                    <span className="text-green-500 text-xs font-medium bg-green-50 border border-green-200 rounded-full px-2 py-0.5">✓ Lunas</span>
+                    <span className="inline-flex items-center gap-1 text-green-500 text-xs font-medium bg-green-50 border border-green-200 rounded-full px-2 py-0.5"><Check size={12} /> Lunas</span>
                     <h3 className="font-display text-lg text-slice-dark">{bill.title}</h3>
                   </div>
                   <p className="text-slice-muted text-xs font-receipt mt-0.5">
@@ -54,9 +56,9 @@ const { data: { session } } = await supabase.auth.getSession()
               </div>
               <div className="flex items-center gap-1 mt-3">
                 {bill.members?.slice(0, 6).map((m: any) => (
-                  <div key={m.id} className="w-6 h-6 rounded-full flex items-center justify-center text-sm -ml-1 first:ml-0 border border-white"
-                    style={{ backgroundColor: `${m.color}30` }}>
-                    {m.avatar_emoji}
+                  <div key={m.id} className="w-6 h-6 rounded-full flex items-center justify-center -ml-1 first:ml-0 border border-white"
+                    style={{ backgroundColor: `${m.color}30`, color: m.color }}>
+                    <AvatarIcon icon={m.avatar_emoji} size={12} />
                   </div>
                 ))}
               </div>

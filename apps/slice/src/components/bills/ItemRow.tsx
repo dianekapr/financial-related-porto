@@ -1,6 +1,7 @@
 'use client'
 import type { BillItem, BillMember, BillItemAssignment } from '@portfolio/supabase'
 import { formatMoney } from '../../lib/money'
+import { AvatarIcon } from '../../lib/avatarIcons'
 
 type FullItem = BillItem & { assignments: (BillItemAssignment & { member: BillMember | null })[] }
 
@@ -49,7 +50,7 @@ export default function ItemRow({
               }`}
               style={assigned ? { backgroundColor: m.color } : {}}
             >
-              <span>{m.avatar_emoji}</span>
+              <AvatarIcon icon={m.avatar_emoji} size={12} />
               <span>{m.name}</span>
               {assigned && perPerson && (
                 <span className="opacity-75 text-[10px]">({formatMoney(perPerson, currency)})</span>

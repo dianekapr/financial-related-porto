@@ -4,6 +4,7 @@ import { usePathname } from 'next/navigation'
 import { createClient } from '@portfolio/supabase'
 import { useRouter } from 'next/navigation'
 import Image from 'next/image'
+import { Receipt, History } from 'lucide-react'
 import type { Profile } from '@portfolio/supabase'
 
 export default function SliceNav({ profile }: { profile: Profile | null }) {
@@ -27,18 +28,19 @@ export default function SliceNav({ profile }: { profile: Profile | null }) {
         {/* Nav */}
         <nav className="flex items-center gap-1">
           {[
-            { href: '/bills', label: '🧾 Bills' },
-            { href: '/bills/history', label: '📋 History' },
+            { href: '/bills', label: 'Bills', Icon: Receipt },
+            { href: '/bills/history', label: 'History', Icon: History },
           ].map(item => (
             <Link
               key={item.href}
               href={item.href}
-              className={`px-3 py-1.5 rounded-xl text-sm font-medium transition-all
+              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-sm font-medium transition-all
                 ${pathname === item.href
                   ? 'bg-slice-orange text-white'
                   : 'text-slice-muted hover:text-slice-dark hover:bg-slice-surface'
                 }`}
             >
+              <item.Icon size={16} />
               {item.label}
             </Link>
           ))}

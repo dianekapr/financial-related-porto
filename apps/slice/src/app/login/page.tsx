@@ -1,6 +1,7 @@
 'use client'
 import { createClient } from '@portfolio/supabase'
 import { useState } from 'react'
+import { Smile } from 'lucide-react'
 
 export default function LoginPage() {
   const [loading, setLoading] = useState(false)
@@ -49,7 +50,7 @@ export default function LoginPage() {
             <hr className="receipt-divider" />
             <div className="flex justify-between text-sm font-bold">
               <span>TOTAL SAVED</span>
-              <span className="text-slice-orange">Banyak 😄</span>
+              <span className="inline-flex items-center gap-1 text-slice-orange">Banyak <Smile size={14} /></span>
             </div>
             <hr className="receipt-divider" />
 

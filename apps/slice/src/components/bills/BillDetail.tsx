@@ -7,6 +7,7 @@ import { formatMoney } from '../../lib/money'
 import SummaryCard from './SummaryCard'
 import ItemRow from './ItemRow'
 import SettleModal from './SettleModal'
+import { Check, Loader2, Camera, Image as ImageIcon, X, Scissors, Plus } from 'lucide-react'
 
 type FullItem = BillItem & { assignments: (BillItemAssignment & { member: BillMember | null })[] }
 
@@ -217,7 +218,7 @@ export default function BillDetail({
           <div className="flex items-center gap-2">
             <h1 className="font-display text-2xl text-slice-dark">{bill.title}</h1>
             {isSettled && (
-              <span className="text-green-600 text-xs font-medium bg-green-50 border border-green-200 rounded-full px-2 py-0.5">✓ Lunas</span>
+              <span className="inline-flex items-center gap-1 text-green-600 text-xs font-medium bg-green-50 border border-green-200 rounded-full px-2 py-0.5"><Check size={12} /> Lunas</span>
             )}
           </div>
           <p className="text-slice-muted text-sm font-receipt">{bill.date} · {bill.currency}</p>
@@ -251,20 +252,20 @@ export default function BillDetail({
                 disabled={scanning}
                 className="flex items-center gap-1.5 bg-white border border-slice-border rounded-xl px-3 py-2 text-sm text-slice-dark hover:border-slice-orange/40 transition-all text-xs font-medium disabled:opacity-60"
               >
-                {scanning ? '🔍 Scanning...' : '📷 Kamera'}
+                {scanning ? <><Loader2 size={14} className="animate-spin" /> Scanning...</> : <><Camera size={14} /> Kamera</>}
               </button>
               <button
                 onClick={() => galleryRef.current?.click()}
                 disabled={scanning}
                 className="flex items-center gap-1.5 bg-white border border-slice-border rounded-xl px-3 py-2 text-sm text-slice-dark hover:border-slice-orange/40 transition-all text-xs font-medium disabled:opacity-60"
               >
-                {scanning ? '🔍 Scanning...' : '🖼️ Galeri'}
+                {scanning ? <><Loader2 size={14} className="animate-spin" /> Scanning...</> : <><ImageIcon size={14} /> Galeri</>}
               </button>
               <button
                 onClick={() => setShowAddItem(true)}
                 className="flex items-center gap-1 bg-slice-orange text-white rounded-xl px-3 py-2 text-xs font-medium hover:bg-slice-orange-light transition-all"
               >
-                + Item
+                <Plus size={14} /> Item
               </button>
             </div>
           )}
@@ -279,7 +280,7 @@ export default function BillDetail({
         {scanError && (
           <div className="px-5 py-3 bg-red-50 border-b border-red-100 flex items-center justify-between gap-2">
             <p className="text-red-600 text-xs">{scanError}</p>
-            <button onClick={() => setScanError(null)} className="text-red-400 hover:text-red-600 text-xs shrink-0">✕</button>
+            <button onClick={() => setScanError(null)} className="text-red-400 hover:text-red-600 text-xs shrink-0"><X size={14} /></button>
           </div>
         )}
 
@@ -361,9 +362,9 @@ export default function BillDetail({
       {!isSettled && items.length > 0 && (
         <button
           onClick={() => setShowSettle(true)}
-          className="w-full bg-slice-dark text-white rounded-2xl py-4 font-display text-xl hover:bg-gray-800 active:scale-[0.98] transition-all shadow-md"
+          className="w-full flex items-center justify-center gap-2 bg-slice-dark text-white rounded-2xl py-4 font-display text-xl hover:bg-gray-800 active:scale-[0.98] transition-all shadow-md"
         >
-          ✂️ Hitung Siapa Bayar Berapa
+          <Scissors size={20} /> Hitung Siapa Bayar Berapa
         </button>
       )}
 

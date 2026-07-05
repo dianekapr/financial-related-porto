@@ -1,9 +1,14 @@
 {
   "pages": {
-    "/page": [
+    "/bills/layout": [
       "static/chunks/webpack.js",
       "static/chunks/main-app.js",
-      "static/chunks/app/page.js"
+      "static/chunks/app/bills/layout.js"
+    ],
+    "/bills/page": [
+      "static/chunks/webpack.js",
+      "static/chunks/main-app.js",
+      "static/chunks/app/bills/page.js"
     ],
     "/layout": [
       "static/chunks/webpack.js",
@@ -11,15 +16,10 @@
       "static/css/app/layout.css",
       "static/chunks/app/layout.js"
     ],
-    "/bills/page": [
+    "/bills/[id]/page": [
       "static/chunks/webpack.js",
       "static/chunks/main-app.js",
-      "static/chunks/app/bills/page.js"
-    ],
-    "/bills/layout": [
-      "static/chunks/webpack.js",
-      "static/chunks/main-app.js",
-      "static/chunks/app/bills/layout.js"
+      "static/chunks/app/bills/[id]/page.js"
     ]
   }
 }

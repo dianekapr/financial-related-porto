@@ -2,9 +2,10 @@
 import { useState, useTransition } from 'react'
 import { useRouter } from 'next/navigation'
 import { createClient } from '@portfolio/supabase'
+import { X, ArrowRight } from 'lucide-react'
+import { getInitial } from '../../lib/avatar'
 
-const EMOJIS = ['🧑','👩','👨','🧔','👧','🧒','🎩','🤓','😎','🥸','🤩','😄']
-const COLORS = ['#FF5E1A','#3B82F6','#22C55E','#8B5CF6','#F59E0B','#EC4899','#14B8A6','#EF4444','#6366F1','#84CC16']
+const COLORS = ['#FF5E1A','#3B82F6','#22C55E','#8B5CF6','#F59E0B','#EC4899','#14B8A6','#EF4444','#6366F1','#84CC16','#06B6D4','#A855F7','#F43F5E','#10B981','#0EA5E9','#D97706']
 const CURRENCIES = ['IDR', 'USD', 'EUR', 'SGD', 'MYR', 'JPY', 'GBP', 'AUD']
 
 export default function CreateBillModal({ onClose }: { onClose: () => void }) {
@@ -15,14 +16,14 @@ export default function CreateBillModal({ onClose }: { onClose: () => void }) {
   const [title, setTitle] = useState('')
   const [date, setDate] = useState(new Date().toISOString().split('T')[0])
   const [currency, setCurrency] = useState('IDR')
-  const [members, setMembers] = useState([
-    { name: '', emoji: '🧑', color: COLORS[0] },
-    { name: '', emoji: '👩', color: COLORS[1] },
+  const [members, setMembers] = useState<{ name: string; color: string }[]>([
+    { name: '', color: COLORS[0] },
+    { name: '', color: COLORS[1] },
   ])
 
   const addMember = () => {
     const idx = members.length % COLORS.length
-    setMembers(prev => [...prev, { name: '', emoji: EMOJIS[idx] ?? '🧑', color: COLORS[idx] }])
+    setMembers(prev => [...prev, { name: '', color: COLORS[idx] }])
   }
 
   const removeMember = (i: number) => setMembers(prev => prev.filter((_, j) => j !== i))
@@ -55,7 +56,6 @@ export default function CreateBillModal({ onClose }: { onClose: () => void }) {
           bill_id: bill.id,
           name: m.name.trim(),
           color: m.color,
-          avatar_emoji: m.emoji,
         }))
       )
 
@@ -119,49 +119,52 @@ export default function CreateBillModal({ onClose }: { onClose: () => void }) {
             <label className="text-slice-muted text-xs font-receipt uppercase tracking-widest block mb-2">
               Siapa Aja? ({members.filter(m => m.name.trim()).length} orang)
             </label>
-            <div className="space-y-2">
+            <div className="space-y-3">
               {members.map((m, i) => (
-                <div key={i} className="flex items-center gap-2">
-                  {/* Emoji picker (simple) */}
-                  <select
-                    value={m.emoji}
-                    onChange={e => updateMember(i, 'emoji', e.target.value)}
-                    className="w-11 h-11 text-xl bg-slice-surface border border-slice-border rounded-xl text-center cursor-pointer focus:outline-none"
+                <div key={i} className="flex items-start gap-2">
+                  {/* Color-only avatar preview */}
+                  <div
+                    className="w-11 h-11 flex-shrink-0 flex items-center justify-center rounded-xl font-display text-lg text-white"
+                    style={{ backgroundColor: m.color }}
                   >
-                    {EMOJIS.map(e => <option key={e} value={e}>{e}</option>)}
-                  </select>
+                    {getInitial(m.name || `Orang ${i + 1}`)}
+                  </div>
 
-                  {/* Name */}
-                  <input
-                    type="text"
-                    value={m.name}
-                    onChange={e => updateMember(i, 'name', e.target.value)}
-                    placeholder={`Orang ${i + 1}`}
-                    className="flex-1 border border-slice-border rounded-xl py-2.5 px-3 text-sm focus:outline-none focus:border-slice-orange/60 bg-slice-surface transition-colors"
-                    style={{ borderLeftColor: m.color, borderLeftWidth: 3 }}
-                  />
+                  <div className="flex-1 space-y-1.5">
+                    {/* Name */}
+                    <input
+                      type="text"
+                      value={m.name}
+                      onChange={e => updateMember(i, 'name', e.target.value)}
+                      placeholder={`Orang ${i + 1}`}
+                      className="w-full border border-slice-border rounded-xl py-2.5 px-3 text-sm focus:outline-none focus:border-slice-orange/60 bg-slice-surface transition-colors"
+                      style={{ borderLeftColor: m.color, borderLeftWidth: 3 }}
+                    />
 
-                  {/* Color dots */}
-                  <div className="flex gap-1">
-                    {COLORS.slice(0, 5).map(c => (
-                      <button
-                        key={c}
-                        type="button"
-                        onClick={() => updateMember(i, 'color', c)}
-                        className="w-4 h-4 rounded-full transition-transform hover:scale-125"
-                        style={{
-                          backgroundColor: c,
-                          ...(m.color === c && {
-                            boxShadow: `0 0 0 2px ${c}`,
-                            outline: 'none'
-                          })
-                        }}
-                      />
-                    ))}
+                    {/* Color swatches */}
+                    <div className="flex flex-wrap gap-1.5">
+                      {COLORS.map(c => (
+                        <button
+                          key={c}
+                          type="button"
+                          onClick={() => updateMember(i, 'color', c)}
+                          className="w-5 h-5 rounded-full transition-transform hover:scale-125"
+                          style={{
+                            backgroundColor: c,
+                            ...(m.color === c && {
+                              boxShadow: `0 0 0 2px white, 0 0 0 4px ${c}`,
+                              outline: 'none'
+                            })
+                          }}
+                        />
+                      ))}
+                    </div>
                   </div>
 
                   {members.length > 2 && (
-                    <button onClick={() => removeMember(i)} className="text-slate-300 hover:text-red-400 transition-colors text-lg leading-none">✕</button>
+                    <button onClick={() => removeMember(i)} className="mt-2.5 text-slate-300 hover:text-red-400 transition-colors">
+                      <X size={16} />
+                    </button>
                   )}
                 </div>
               ))}
@@ -182,7 +185,7 @@ export default function CreateBillModal({ onClose }: { onClose: () => void }) {
             disabled={isPending || !title.trim() || members.filter(m => m.name.trim()).length < 2}
             className="w-full bg-slice-orange text-white rounded-xl py-3.5 font-display text-lg hover:bg-slice-orange-light active:scale-[0.98] transition-all disabled:opacity-50 shadow-md"
           >
-            {isPending ? 'Membuat...' : 'Buat Tagihan →'}
+            {isPending ? 'Membuat...' : <span className="inline-flex items-center gap-1.5">Buat Tagihan <ArrowRight size={18} /></span>}
           </button>
         </div>
       </div>

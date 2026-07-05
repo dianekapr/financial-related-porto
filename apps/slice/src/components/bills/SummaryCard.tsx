@@ -1,5 +1,6 @@
 import type { BillMember } from '@portfolio/supabase'
 import { formatMoney } from '../../lib/money'
+import { AvatarIcon } from '../../lib/avatarIcons'
 
 export default function SummaryCard({ member, total, currency }: { member: BillMember; total: number; currency: string }) {
   return (
@@ -8,7 +9,7 @@ export default function SummaryCard({ member, total, currency }: { member: BillM
       style={{ borderColor: member.color }}
     >
       <div className="flex items-center gap-1.5 mb-1">
-        <span className="text-xl">{member.avatar_emoji}</span>
+        <AvatarIcon icon={member.avatar_emoji} size={18} style={{ color: member.color }} />
         <p className="text-sm font-medium text-slice-dark truncate max-w-[72px]">{member.name}</p>
       </div>
       <p className="font-display text-lg" style={{ color: member.color }}>

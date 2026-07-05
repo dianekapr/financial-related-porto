@@ -7,7 +7,10 @@ import { formatMoney } from '../../lib/money'
 import SummaryCard from './SummaryCard'
 import ItemRow from './ItemRow'
 import SettleModal from './SettleModal'
-import { Check, Loader2, Camera, Image as ImageIcon, X, Scissors, Plus } from 'lucide-react'
+import EditBillModal from './EditBillModal'
+import ConfirmDialog from '../ConfirmDialog'
+import { useToast } from '../Toast'
+import { Check, Loader2, Camera, Image as ImageIcon, X, Scissors, Plus, Settings } from 'lucide-react'
 
 type FullItem = BillItem & { assignments: (BillItemAssignment & { member: BillMember | null })[] }
 
@@ -42,6 +45,7 @@ export default function BillDetail({
 }) {
   const router = useRouter()
   const supabase = createClient()
+  const toast = useToast()
   const cameraRef = useRef<HTMLInputElement>(null)
   const galleryRef = useRef<HTMLInputElement>(null)
   const [isPending, startTransition] = useTransition()
@@ -50,6 +54,8 @@ export default function BillDetail({
   const [scanning, setScanning] = useState(false)
   const [scanError, setScanError] = useState<string | null>(null)
   const [showSettle, setShowSettle] = useState(false)
+  const [showEditBill, setShowEditBill] = useState(false)
+  const [deletingItemId, setDeletingItemId] = useState<string | null>(null)
   const [newItem, setNewItem] = useState({ name: '', price: '', qty: '1' })
   const [showAddItem, setShowAddItem] = useState(false)
 
@@ -159,23 +165,107 @@ export default function BillDetail({
     const qty = parseInt(newItem.qty) || 1
     if (!newItem.name.trim() || !price) return
 
-    const { data: item } = await supabase
+    const { data: item, error } = await supabase
       .from('bill_items')
       .insert({ bill_id: bill.id, name: newItem.name.trim(), price, quantity: qty })
       .select()
       .single()
 
-    if (item) {
-      // Create FullItem with empty assignments array
-      const newFullItem: FullItem = {
-        ...item,
-        assignments: []
-      }
-      setItems(prev => [...prev, newFullItem])
-      await supabase.from('bills').update({ total: grandTotal + price * qty }).eq('id', bill.id)
-      setNewItem({ name: '', price: '', qty: '1' })
-      setShowAddItem(false)
+    if (error || !item) {
+      toast.show('Gagal tambah item, coba lagi.', 'error')
+      return
     }
+
+    // Create FullItem with empty assignments array
+    const newFullItem: FullItem = {
+      ...item,
+      assignments: []
+    }
+    setItems(prev => [...prev, newFullItem])
+    await supabase.from('bills').update({ total: grandTotal + price * qty }).eq('id', bill.id)
+    setNewItem({ name: '', price: '', qty: '1' })
+    setShowAddItem(false)
+    toast.show('Item ditambahkan.')
+  }
+
+  // Edit item name/price/qty. Assignments only get auto-recalculated when
+  // they were an equal split before the edit — custom (manually-adjusted)
+  // splits are left untouched since the model has no idea what the user's
+  // new intent for them is, but the totals may now be off so we flag it.
+  const editItem = async (itemId: string, updates: { name: string; price: number; quantity: number }) => {
+    const item = items.find(i => i.id === itemId)
+    if (!item) return
+    const oldLineTotal = item.price * item.quantity
+    const newLineTotal = updates.price * updates.quantity
+
+    const { error } = await supabase.from('bill_items').update(updates).eq('id', itemId)
+    if (error) {
+      toast.show('Gagal update item, coba lagi.', 'error')
+      return
+    }
+
+    const assignedIds = item.assignments?.map(a => a.member_id) ?? []
+    const oldPerPerson = assignedIds.length > 0 ? oldLineTotal / assignedIds.length : 0
+    const wasEqualSplit = item.assignments?.every(a => Math.abs(a.share_amount - oldPerPerson) < 0.01) ?? true
+
+    let updatedAssignments = item.assignments
+    if (assignedIds.length > 0 && wasEqualSplit) {
+      const newPerPerson = newLineTotal / assignedIds.length
+      await supabase.from('bill_item_assignments').delete().eq('bill_item_id', itemId)
+      const { data: newAssignments } = await supabase
+        .from('bill_item_assignments')
+        .insert(assignedIds.map(mid => ({ bill_item_id: itemId, member_id: mid, share_amount: newPerPerson })))
+        .select('*, member:bill_members(*)')
+      updatedAssignments = (newAssignments as FullItem['assignments']) ?? []
+    } else if (assignedIds.length > 0) {
+      toast.show('Item diubah — porsi custom-nya mungkin perlu dicek ulang.', 'error')
+    }
+
+    setItems(prev => prev.map(i => i.id === itemId ? { ...i, ...updates, assignments: updatedAssignments ?? [] } : i))
+    await supabase.from('bills').update({ total: grandTotal - oldLineTotal + newLineTotal }).eq('id', bill.id)
+    toast.show('Item diperbarui.')
+  }
+
+  // Delete confirmation is handled by a ConfirmDialog in the render below;
+  // this just performs the deletion once the user confirms.
+  const confirmDeleteItem = async () => {
+    const itemId = deletingItemId
+    if (!itemId) return
+    const item = items.find(i => i.id === itemId)
+    if (!item) { setDeletingItemId(null); return }
+
+    const lineTotal = item.price * item.quantity
+    const { error } = await supabase.from('bill_items').delete().eq('id', itemId)
+    setDeletingItemId(null)
+    if (error) {
+      toast.show('Gagal hapus item, coba lagi.', 'error')
+      return
+    }
+    setItems(prev => prev.filter(i => i.id !== itemId))
+    await supabase.from('bills').update({ total: grandTotal - lineTotal }).eq('id', bill.id)
+    toast.show('Item dihapus.')
+  }
+
+  // Replace an item's assignments with an exact (non-equal) split
+  const customSplit = async (itemId: string, shares: { member_id: string; share_amount: number }[]) => {
+    await supabase.from('bill_item_assignments').delete().eq('bill_item_id', itemId)
+
+    if (shares.length === 0) {
+      setItems(prev => prev.map(i => i.id === itemId ? { ...i, assignments: [] } : i))
+      return
+    }
+
+    const { data: newAssignments, error } = await supabase
+      .from('bill_item_assignments')
+      .insert(shares.map(s => ({ bill_item_id: itemId, member_id: s.member_id, share_amount: s.share_amount })))
+      .select('*, member:bill_members(*)')
+
+    if (error) {
+      toast.show('Gagal simpan porsi, coba lagi.', 'error')
+      return
+    }
+    setItems(prev => prev.map(i => i.id === itemId ? { ...i, assignments: (newAssignments as FullItem['assignments']) ?? [] } : i))
+    toast.show('Porsi item disimpan.')
   }
 
   // Toggle assignment
@@ -219,6 +309,15 @@ export default function BillDetail({
             <h1 className="font-display text-2xl text-slice-dark">{bill.title}</h1>
             {isSettled && (
               <span className="inline-flex items-center gap-1 text-green-600 text-xs font-medium bg-green-50 border border-green-200 rounded-full px-2 py-0.5"><Check size={12} /> Lunas</span>
+            )}
+            {!isSettled && (
+              <button
+                onClick={() => setShowEditBill(true)}
+                title="Kelola tagihan & orang"
+                className="p-1 text-slice-text-dim hover:text-slice-orange transition-colors"
+              >
+                <Settings size={16} />
+              </button>
             )}
           </div>
           <p className="text-slice-muted text-sm font-receipt">{bill.date} · {bill.currency}</p>

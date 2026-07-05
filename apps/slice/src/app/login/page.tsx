@@ -37,11 +37,11 @@ export default function LoginPage() {
           <div className="px-6 py-6 font-receipt space-y-3">
             <div className="flex justify-between text-sm">
               <span className="text-slice-muted">APP VERSION</span>
-              <span className="font-bold">2.0.0</span>
+              <span className="font-bold">1.0.0</span>
             </div>
             <div className="flex justify-between text-sm">
               <span className="text-slice-muted">FEATURES</span>
-              <span className="font-bold">Scan AI + Split</span>
+              <span className="font-bold">Bills Scanner + Split</span>
             </div>
             <div className="flex justify-between text-sm">
               <span className="text-slice-muted">PLATFORM</span>
@@ -70,7 +70,7 @@ export default function LoginPage() {
             </button>
 
             <p className="text-slice-text-dim text-[11px] text-center font-sans">
-              Gratis selamanya. No BS.
+              Gratis selama-lamanya 
             </p>
           </div>
 
@@ -82,7 +82,7 @@ export default function LoginPage() {
                   style={{ width: Math.random() > 0.5 ? 2 : 1, height: 28 + Math.random() * 8 }} />
               ))}
             </div>
-            <p className="font-receipt text-slice-text-dim text-[10px] tracking-widest">SLICE-2024-APP</p>
+            <p className="font-receipt text-slice-text-dim text-[10px] tracking-widest">SLICE 2026 by DYN</p>
           </div>
         </div>
       </div>

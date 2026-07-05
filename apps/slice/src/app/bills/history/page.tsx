@@ -3,7 +3,7 @@ import Link from 'next/link'
 import { format } from 'date-fns'
 import { id as localeId } from 'date-fns/locale'
 import { formatMoney } from '../../../lib/money'
-import { AvatarIcon } from '../../../lib/avatarIcons'
+import { getInitial } from '../../../lib/avatar'
 import { ClipboardList, Check } from 'lucide-react'
 
 export default async function HistoryPage() {
@@ -56,9 +56,9 @@ const { data: { session } } = await supabase.auth.getSession()
               </div>
               <div className="flex items-center gap-1 mt-3">
                 {bill.members?.slice(0, 6).map((m: any) => (
-                  <div key={m.id} className="w-6 h-6 rounded-full flex items-center justify-center -ml-1 first:ml-0 border border-white"
-                    style={{ backgroundColor: `${m.color}30`, color: m.color }}>
-                    <AvatarIcon icon={m.avatar_emoji} size={12} />
+                  <div key={m.id} className="w-6 h-6 rounded-full flex items-center justify-center -ml-1 first:ml-0 border border-white text-white text-[10px] font-bold"
+                    style={{ backgroundColor: m.color }}>
+                    {getInitial(m.name)}
                   </div>
                 ))}
               </div>

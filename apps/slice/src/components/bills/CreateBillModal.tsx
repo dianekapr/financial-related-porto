@@ -5,7 +5,21 @@ import { createClient } from '@portfolio/supabase'
 import { X, ArrowRight } from 'lucide-react'
 import { getInitial } from '../../lib/avatar'
 
-const COLORS = ['#FF5E1A','#3B82F6','#22C55E','#8B5CF6','#F59E0B','#EC4899','#14B8A6','#EF4444','#6366F1','#84CC16','#06B6D4','#A855F7','#F43F5E','#10B981','#0EA5E9','#D97706']
+const COLORS = [
+  '#DC2626',
+  '#EA580C',
+  '#CA8A04',
+  '#65A30D',
+  '#16A34A',
+  '#059669',
+  '#0F766E',
+  '#0891B2',
+  '#2563EB',
+  '#4F46E5',
+  '#7C3AED',
+  '#C026D3',
+  '#DB2777',
+];
 const CURRENCIES = ['IDR', 'USD', 'EUR', 'SGD', 'MYR', 'JPY', 'GBP', 'AUD']
 
 export default function CreateBillModal({ onClose }: { onClose: () => void }) {

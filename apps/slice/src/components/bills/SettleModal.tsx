@@ -4,11 +4,22 @@ import { useRouter } from 'next/navigation'
 import { createClient } from '@portfolio/supabase'
 import type { Bill, BillMember, BillItem, BillItemAssignment } from '@portfolio/supabase'
 import { formatMoney } from '../../lib/money'
-import { AvatarIcon } from '../../lib/avatarIcons'
+import { getInitial } from '../../lib/avatar'
 import { PartyPopper, MessageCircle, CircleCheck } from 'lucide-react'
 
 type MemberWithTotal = BillMember & { total: number }
 type ItemWithAssignments = BillItem & { assignments: (BillItemAssignment & { member: BillMember | null })[] }
+
+function MemberDot({ member, size }: { member: BillMember; size: number }) {
+  return (
+    <span
+      className="flex-shrink-0 rounded-full flex items-center justify-center text-white font-bold"
+      style={{ backgroundColor: member.color, width: size, height: size, fontSize: size * 0.5 }}
+    >
+      {getInitial(member.name)}
+    </span>
+  )
+}
 
 // One person fronted the whole bill — everyone else pays back exactly
 // what they ordered (their `total`), directly to the payer.
@@ -253,7 +264,7 @@ export default function SettleModal({
               {members.map(m => (
                 <div key={m.id} className="flex items-center justify-between">
                   <div className="flex items-center gap-2">
-                    <AvatarIcon icon={m.avatar_emoji} size={18} style={{ color: m.color }} />
+                    <MemberDot member={m} size={18} />
                     <span className="text-sm font-medium">{m.name}</span>
                     {m.id === payerId && (
                       <span className="text-[10px] text-green-600 bg-green-50 border border-green-200 rounded-full px-1.5 py-0.5">bayar duluan</span>
@@ -285,10 +296,10 @@ export default function SettleModal({
                 {settlements.map((s, i) => (
                   <div key={i} className="bg-slice-surface rounded-2xl p-4 border border-slice-border">
                     <div className="flex items-center gap-2 flex-wrap">
-                      <AvatarIcon icon={s.from.avatar_emoji} size={20} style={{ color: s.from.color }} />
+                      <MemberDot member={s.from} size={20} />
                       <span className="font-medium text-sm">{s.from.name}</span>
                       <span className="text-slice-muted text-sm font-receipt">transfer ke</span>
-                      <AvatarIcon icon={payer.avatar_emoji} size={20} style={{ color: payer.color }} />
+                      <MemberDot member={payer} size={20} />
                       <span className="font-medium text-sm">{payer.name}</span>
                     </div>
                     <div className="flex items-center justify-between mt-2">

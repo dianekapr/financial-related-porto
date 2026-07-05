@@ -1,6 +1,6 @@
 import type { BillMember } from '@portfolio/supabase'
 import { formatMoney } from '../../lib/money'
-import { AvatarIcon } from '../../lib/avatarIcons'
+import { getInitial } from '../../lib/avatar'
 
 export default function SummaryCard({ member, total, currency }: { member: BillMember; total: number; currency: string }) {
   return (
@@ -9,7 +9,12 @@ export default function SummaryCard({ member, total, currency }: { member: BillM
       style={{ borderColor: member.color }}
     >
       <div className="flex items-center gap-1.5 mb-1">
-        <AvatarIcon icon={member.avatar_emoji} size={18} style={{ color: member.color }} />
+        <span
+          className="w-5 h-5 flex-shrink-0 rounded-full flex items-center justify-center text-white text-[10px] font-bold"
+          style={{ backgroundColor: member.color }}
+        >
+          {getInitial(member.name)}
+        </span>
         <p className="text-sm font-medium text-slice-dark truncate max-w-[72px]">{member.name}</p>
       </div>
       <p className="font-display text-lg" style={{ color: member.color }}>

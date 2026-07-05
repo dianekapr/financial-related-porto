@@ -8,7 +8,7 @@ import { format } from 'date-fns'
 import { id as localeId } from 'date-fns/locale'
 import CreateBillModal from './CreateBillModal'
 import { formatMoney } from '../../lib/money'
-import { AvatarIcon } from '../../lib/avatarIcons'
+import { getInitial } from '../../lib/avatar'
 import { Plus, Receipt, Loader2, Trash2 } from 'lucide-react'
 
 type BillWithMembers = Bill & { members: BillMember[] }
@@ -84,10 +84,10 @@ export default function BillsList({ bills }: { bills: BillWithMembers[] }) {
                       <div
                         key={m.id}
                         title={m.name}
-                        className="w-7 h-7 rounded-full flex items-center justify-center border-2 border-white -ml-1 first:ml-0"
-                        style={{ backgroundColor: `${m.color}30`, borderColor: m.color, color: m.color }}
+                        className="w-7 h-7 rounded-full flex items-center justify-center border-2 border-white text-white text-xs font-bold -ml-1 first:ml-0"
+                        style={{ backgroundColor: m.color }}
                       >
-                        <AvatarIcon icon={m.avatar_emoji} size={14} />
+                        {getInitial(m.name)}
                       </div>
                     ))}
                     {bill.members.length > 6 && (

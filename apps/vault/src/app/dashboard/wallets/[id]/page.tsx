@@ -30,14 +30,14 @@ export default async function WalletDetailPage({ params }: { params: { id: strin
   return (
     <div className="space-y-6">
       <div>
-        <Link href="/dashboard/wallets" className="text-vault-text-dim text-xs font-mono hover:text-vault-gold transition-colors">
+        <Link href="/dashboard/wallets" className="text-vault-text-dim text-xs font-mono hover:text-vault-accent transition-colors">
           {t(locale, 'walletBackLink')}
         </Link>
         <div className="flex items-center gap-2.5 mt-2">
           <div className="w-4 h-4 rounded-full flex-shrink-0" style={{ backgroundColor: wallet.color }} />
           <h1 className="font-display text-4xl md:text-5xl text-vault-text tracking-wider">{wallet.name.toUpperCase()}</h1>
         </div>
-        <p className="font-mono text-2xl text-vault-gold font-semibold mt-2">{formatIDR(wallet.balance)}</p>
+        <p className="font-mono text-2xl text-vault-accent font-semibold mt-2">{formatIDR(wallet.balance)}</p>
       </div>
 
       <WalletTransactions transactions={transactions ?? []} />

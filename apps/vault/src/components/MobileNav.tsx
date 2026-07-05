@@ -26,7 +26,7 @@ export default function MobileNav() {
               key={item.href}
               href={item.href}
               className={`flex flex-col items-center gap-0.5 px-3 py-2 rounded-xl transition-all
-                ${active ? 'text-vault-gold' : 'text-vault-muted'}`}
+                ${active ? 'text-vault-accent' : 'text-vault-muted'}`}
             >
               <span className="text-xl">{item.icon}</span>
               <span className="text-[10px] font-mono tracking-wide">{item.label}</span>

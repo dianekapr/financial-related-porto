@@ -1,6 +1,7 @@
 import type { Metadata, Viewport } from 'next'
 import './globals.css'
 import ThemeProvider, { themeInitScript } from '../components/ThemeProvider'
+import ThemeStyleTag from '../components/theme/ThemeStyleTag'
 import LocaleProvider from '../components/LocaleProvider'
 import { getServerLocale } from '../lib/getServerLocale'
 
@@ -24,6 +25,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
   return (
     <html lang={locale} className="dark" suppressHydrationWarning>
       <head>
+        <ThemeStyleTag />
         <script dangerouslySetInnerHTML={{ __html: themeInitScript }} />
       </head>
       <body className="bg-vault-bg text-vault-text antialiased">

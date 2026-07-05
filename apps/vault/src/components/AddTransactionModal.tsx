@@ -5,11 +5,12 @@ import type { Category, Wallet } from '@portfolio/supabase'
 import { useRouter } from 'next/navigation'
 import { formatIDR } from '../lib/money'
 import { useLocale } from './LocaleProvider'
+import { translateCategoryName } from '../lib/i18n'
 
 export default function AddTransactionModal({ onClose }: { onClose: () => void }) {
   const router = useRouter()
   const supabase = createClient()
-  const { t } = useLocale()
+  const { t, locale } = useLocale()
   const [isPending, startTransition] = useTransition()
 
   const [type, setType] = useState<'income' | 'expense'>('expense')
@@ -83,7 +84,7 @@ export default function AddTransactionModal({ onClose }: { onClose: () => void }
         <div className="md:hidden w-10 h-1 bg-vault-border rounded-full mx-auto mt-3 mb-1" />
 
         <div className="p-6">
-          <h2 className="font-display text-vault-gold tracking-widest text-2xl mb-6">{t('addTxTitle')}</h2>
+          <h2 className="font-display text-vault-accent tracking-widest text-2xl mb-6">{t('addTxTitle')}</h2>
 
           <form onSubmit={handleSubmit} className="space-y-4">
             {/* Type toggle */}
@@ -95,7 +96,7 @@ export default function AddTransactionModal({ onClose }: { onClose: () => void }
                   onClick={() => { setType(txType); setCategoryId(null) }}
                   className={`flex-1 py-2.5 text-sm font-mono transition-all
                     ${type === txType
-                      ? txType === 'income' ? 'bg-vault-gold text-vault-bg font-semibold' : 'bg-vault-red text-white font-semibold'
+                      ? txType === 'income' ? 'bg-vault-accent text-vault-accent-contrast font-semibold' : 'bg-vault-danger text-white font-semibold'
                       : 'text-vault-text-dim hover:text-vault-text'
                     }`}
                 >
@@ -119,7 +120,7 @@ export default function AddTransactionModal({ onClose }: { onClose: () => void }
                   }}
                   placeholder="0"
                   required
-                  className="w-full bg-vault-card border border-vault-border rounded-xl py-3 pl-12 pr-4 font-mono text-lg text-vault-text placeholder-vault-muted focus:outline-none focus:border-vault-gold/50 transition-colors"
+                  className="w-full bg-vault-card border border-vault-border rounded-xl py-3 pl-12 pr-4 font-mono text-lg text-vault-text placeholder-vault-muted focus:outline-none focus:border-vault-accent/50 transition-colors"
                 />
               </div>
             </div>
@@ -141,7 +142,7 @@ export default function AddTransactionModal({ onClose }: { onClose: () => void }
                     style={categoryId === cat.id ? { backgroundColor: cat.color } : {}}
                   >
                     <span>{cat.icon}</span>
-                    <span>{cat.name}</span>
+                    <span>{translateCategoryName(cat.name, locale)}</span>
                   </button>
                 ))}
               </div>
@@ -180,7 +181,7 @@ export default function AddTransactionModal({ onClose }: { onClose: () => void }
                 value={note}
                 onChange={e => setNote(e.target.value)}
                 placeholder={t('addTxNotePlaceholder')}
-                className="w-full bg-vault-card border border-vault-border rounded-xl py-3 px-4 text-sm text-vault-text placeholder-vault-muted focus:outline-none focus:border-vault-gold/50 transition-colors"
+                className="w-full bg-vault-card border border-vault-border rounded-xl py-3 px-4 text-sm text-vault-text placeholder-vault-muted focus:outline-none focus:border-vault-accent/50 transition-colors"
               />
             </div>
 
@@ -191,7 +192,7 @@ export default function AddTransactionModal({ onClose }: { onClose: () => void }
                 type="date"
                 value={date}
                 onChange={e => setDate(e.target.value)}
-                className="w-full bg-vault-card border border-vault-border rounded-xl py-3 px-4 text-sm text-vault-text font-mono focus:outline-none focus:border-vault-gold/50 transition-colors"
+                className="w-full bg-vault-card border border-vault-border rounded-xl py-3 px-4 text-sm text-vault-text font-mono focus:outline-none focus:border-vault-accent/50 transition-colors"
               />
             </div>
 
@@ -199,7 +200,7 @@ export default function AddTransactionModal({ onClose }: { onClose: () => void }
             <button
               type="submit"
               disabled={isPending || !amount}
-              className="w-full bg-vault-gold text-vault-bg rounded-xl py-3.5 font-mono font-semibold text-sm hover:bg-vault-gold-light active:scale-[0.98] transition-all disabled:opacity-50 mt-2"
+              className="w-full bg-vault-accent text-vault-accent-contrast rounded-xl py-3.5 font-mono font-semibold text-sm hover:bg-vault-accent-light active:scale-[0.98] transition-all disabled:opacity-50 mt-2"
             >
               {isPending ? t('saving') : t('addTxSubmit')}
             </button>

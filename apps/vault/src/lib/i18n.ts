@@ -122,7 +122,8 @@ const dict = {
   addTxSubmit: { id: 'Simpan Transaksi', en: 'Save Transaction' },
 
   settingsTitle: { id: 'PENGATURAN', en: 'SETTINGS' },
-  settingsTheme: { id: 'Tema Warna', en: 'Color Theme' },
+  settingsTheme: { id: 'Vault Skins', en: 'Vault Skins' },
+  settingsThemeHint: { id: 'Pilih palet warna, lalu Siang/Malam', en: 'Pick a color family, then Day or Night' },
   settingsLanguage: { id: 'Bahasa', en: 'Language' },
 } as const
 
@@ -130,4 +131,25 @@ export type TranslationKey = keyof typeof dict
 
 export function t(locale: Locale, key: TranslationKey): string {
   return dict[key]?.[locale] ?? dict[key]?.[DEFAULT_LOCALE] ?? key
+}
+
+// The 9 default categories are seeded (in Indonesian) by a DB trigger on
+// signup — they're fixed, known app content, not arbitrary user text, so
+// unlike a category the user renamed or created themselves, these can be
+// safely translated for display. Anything not in this map (custom
+// categories, renamed ones) passes through unchanged.
+const CATEGORY_NAMES: Record<string, { id: string; en: string }> = {
+  'Makan & Minum': { id: 'Makan & Minum', en: 'Food & Drinks' },
+  'Transport': { id: 'Transport', en: 'Transport' },
+  'Belanja': { id: 'Belanja', en: 'Shopping' },
+  'Hiburan': { id: 'Hiburan', en: 'Entertainment' },
+  'Kesehatan': { id: 'Kesehatan', en: 'Health' },
+  'Tagihan': { id: 'Tagihan', en: 'Bills' },
+  'Gaji': { id: 'Gaji', en: 'Salary' },
+  'Freelance': { id: 'Freelance', en: 'Freelance' },
+  'Lainnya': { id: 'Lainnya', en: 'Other' },
+}
+
+export function translateCategoryName(name: string, locale: Locale): string {
+  return CATEGORY_NAMES[name]?.[locale] ?? name
 }

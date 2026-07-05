@@ -6,6 +6,7 @@ import { format } from 'date-fns'
 import { formatIDR } from '../../lib/money'
 import { useLocale } from '../LocaleProvider'
 import { getDateLocale } from '../../lib/dateLocale'
+import { translateCategoryName } from '../../lib/i18n'
 
 function groupByDate(txs: Transaction[]) {
   const groups: Record<string, Transaction[]> = {}
@@ -51,20 +52,20 @@ export default function WalletTransactions({ transactions }: { transactions: Tra
             {txs.map(tx => (
               <div key={tx.id} className="flex items-center gap-4 px-4 py-3.5 group hover:bg-vault-surface/50 transition-colors">
                 <div className="w-10 h-10 rounded-xl flex items-center justify-center text-lg flex-shrink-0"
-                  style={{ backgroundColor: `${tx.category?.color ?? '#C9A84C'}20` }}>
+                  style={{ backgroundColor: tx.category?.color ? `${tx.category.color}20` : 'color-mix(in srgb, var(--vault-accent) 20%, transparent)' }}>
                   {tx.category?.icon ?? (tx.type === 'income' ? '↑' : '↓')}
                 </div>
                 <div className="flex-1 min-w-0">
-                  <p className="text-sm font-medium text-vault-text truncate">{tx.note ?? tx.category?.name ?? t('fallbackTxName')}</p>
-                  {tx.category && <p className="text-xs text-vault-text-dim font-mono mt-0.5">{tx.category.name}</p>}
+                  <p className="text-sm font-medium text-vault-text truncate">{tx.note ?? (tx.category ? translateCategoryName(tx.category.name, locale) : t('fallbackTxName'))}</p>
+                  {tx.category && <p className="text-xs text-vault-text-dim font-mono mt-0.5">{translateCategoryName(tx.category.name, locale)}</p>}
                 </div>
-                <p className={`font-mono text-sm font-semibold flex-shrink-0 ${tx.type === 'income' ? 'text-vault-gold' : 'text-vault-red'}`}>
+                <p className={`font-mono text-sm font-semibold flex-shrink-0 ${tx.type === 'income' ? 'text-vault-accent' : 'text-vault-danger'}`}>
                   {tx.type === 'income' ? '+' : '−'}{formatIDR(tx.amount)}
                 </p>
                 <button
                   onClick={() => handleDelete(tx.id)}
                   disabled={deleting === tx.id}
-                  className="opacity-0 group-hover:opacity-100 text-vault-muted hover:text-vault-red transition-all text-xs font-mono px-2 py-1 rounded"
+                  className="opacity-0 group-hover:opacity-100 text-vault-muted hover:text-vault-danger transition-all text-xs font-mono px-2 py-1 rounded"
                 >
                   {deleting === tx.id ? '...' : '✕'}
                 </button>

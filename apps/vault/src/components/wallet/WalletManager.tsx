@@ -73,7 +73,7 @@ export default function WalletManager({ wallets }: { wallets: Wallet[] }) {
       {/* Total overview */}
       <div className="bg-vault-card border border-vault-border rounded-2xl p-5">
         <p className="text-vault-text-dim text-xs font-mono uppercase tracking-widest">{t('walletsTotalBalance')}</p>
-        <p className="font-mono text-2xl text-vault-gold font-semibold mt-1">{formatIDR(totalBalance)}</p>
+        <p className="font-mono text-2xl text-vault-accent font-semibold mt-1">{formatIDR(totalBalance)}</p>
       </div>
 
       {/* Wallet list */}
@@ -86,16 +86,16 @@ export default function WalletManager({ wallets }: { wallets: Wallet[] }) {
                 <Link href={`/dashboard/wallets/${w.id}`} className="flex items-center gap-2.5 group">
                   <div className="w-3 h-3 rounded-full flex-shrink-0" style={{ backgroundColor: w.color }} />
                   <div>
-                    <p className="text-sm font-medium text-vault-text group-hover:text-vault-gold transition-colors">{w.name}</p>
-                    <p className="font-mono text-lg text-vault-gold font-semibold mt-0.5">{formatIDR(w.balance)}</p>
+                    <p className="text-sm font-medium text-vault-text group-hover:text-vault-accent transition-colors">{w.name}</p>
+                    <p className="font-mono text-lg text-vault-accent font-semibold mt-0.5">{formatIDR(w.balance)}</p>
                   </div>
                 </Link>
                 <div className="flex items-center gap-1">
                   <button onClick={() => handleDelete(w.id)}
-                    className="text-vault-muted hover:text-vault-red text-xs px-1.5 py-1 rounded transition-colors">✕</button>
+                    className="text-vault-muted hover:text-vault-danger text-xs px-1.5 py-1 rounded transition-colors">✕</button>
                   <button
                     onClick={() => { setEditingId(w.id); setEditValue(String(w.balance)) }}
-                    className="text-vault-text-dim hover:text-vault-gold text-xs font-mono px-2 py-1 rounded border border-vault-border hover:border-vault-gold/30 transition-all"
+                    className="text-vault-text-dim hover:text-vault-accent text-xs font-mono px-2 py-1 rounded border border-vault-border hover:border-vault-accent/30 transition-all"
                   >
                     {t('budgetEdit')}
                   </button>
@@ -111,10 +111,10 @@ export default function WalletManager({ wallets }: { wallets: Wallet[] }) {
                     onChange={e => setEditValue(e.target.value.replace(/[^0-9]/g, ''))}
                     placeholder={t('walletBalancePlaceholder')}
                     autoFocus
-                    className="flex-1 bg-vault-surface border border-vault-border rounded-lg px-3 py-2 text-sm font-mono text-vault-text placeholder-vault-muted focus:outline-none focus:border-vault-gold/50"
+                    className="flex-1 bg-vault-surface border border-vault-border rounded-lg px-3 py-2 text-sm font-mono text-vault-text placeholder-vault-muted focus:outline-none focus:border-vault-accent/50"
                   />
                   <button onClick={() => handleSaveBalance(w.id)} disabled={isPending}
-                    className="bg-vault-gold text-vault-bg rounded-lg px-3 py-2 text-xs font-mono font-semibold hover:bg-vault-gold-light transition-all disabled:opacity-50">
+                    className="bg-vault-accent text-vault-accent-contrast rounded-lg px-3 py-2 text-xs font-mono font-semibold hover:bg-vault-accent-light transition-all disabled:opacity-50">
                     {isPending ? '...' : t('ok')}
                   </button>
                   <button onClick={() => setEditingId(null)}
@@ -136,7 +136,7 @@ export default function WalletManager({ wallets }: { wallets: Wallet[] }) {
             onChange={e => setNewName(e.target.value)}
             placeholder={t('walletNamePlaceholder')}
             autoFocus
-            className="w-full bg-vault-surface border border-vault-border rounded-lg px-3 py-2.5 text-sm text-vault-text placeholder-vault-muted focus:outline-none focus:border-vault-gold/50"
+            className="w-full bg-vault-surface border border-vault-border rounded-lg px-3 py-2.5 text-sm text-vault-text placeholder-vault-muted focus:outline-none focus:border-vault-accent/50"
           />
           <input
             type="text"
@@ -144,7 +144,7 @@ export default function WalletManager({ wallets }: { wallets: Wallet[] }) {
             value={newBalance}
             onChange={e => setNewBalance(e.target.value.replace(/[^0-9]/g, ''))}
             placeholder={t('walletInitialBalancePlaceholder')}
-            className="w-full bg-vault-surface border border-vault-border rounded-lg px-3 py-2.5 text-sm font-mono text-vault-text placeholder-vault-muted focus:outline-none focus:border-vault-gold/50"
+            className="w-full bg-vault-surface border border-vault-border rounded-lg px-3 py-2.5 text-sm font-mono text-vault-text placeholder-vault-muted focus:outline-none focus:border-vault-accent/50"
           />
           <div className="flex gap-2">
             {COLORS.map(c => (
@@ -153,13 +153,13 @@ export default function WalletManager({ wallets }: { wallets: Wallet[] }) {
                 type="button"
                 onClick={() => setNewColor(c)}
                 className="w-7 h-7 rounded-full transition-transform hover:scale-110"
-                style={{ backgroundColor: c, boxShadow: newColor === c ? `0 0 0 2px #0A0A0A, 0 0 0 4px ${c}` : 'none' }}
+                style={{ backgroundColor: c, boxShadow: newColor === c ? `0 0 0 2px var(--vault-card), 0 0 0 4px ${c}` : 'none' }}
               />
             ))}
           </div>
           <div className="flex gap-2">
             <button type="submit" disabled={isPending || !newName.trim()}
-              className="flex-1 bg-vault-gold text-vault-bg rounded-lg py-2.5 text-sm font-mono font-semibold hover:bg-vault-gold-light transition-all disabled:opacity-50">
+              className="flex-1 bg-vault-accent text-vault-accent-contrast rounded-lg py-2.5 text-sm font-mono font-semibold hover:bg-vault-accent-light transition-all disabled:opacity-50">
               {isPending ? t('saving') : t('walletSaveBtn')}
             </button>
             <button type="button" onClick={() => setShowAdd(false)}
@@ -171,7 +171,7 @@ export default function WalletManager({ wallets }: { wallets: Wallet[] }) {
       ) : (
         <button
           onClick={() => setShowAdd(true)}
-          className="w-full border-2 border-dashed border-vault-border rounded-2xl py-4 text-vault-text-dim hover:border-vault-gold/40 hover:text-vault-gold transition-all font-mono text-sm"
+          className="w-full border-2 border-dashed border-vault-border rounded-2xl py-4 text-vault-text-dim hover:border-vault-accent/40 hover:text-vault-accent transition-all font-mono text-sm"
         >
           {t('walletAddBtn')}
         </button>

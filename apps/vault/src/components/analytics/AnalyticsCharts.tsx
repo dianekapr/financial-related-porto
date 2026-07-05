@@ -10,6 +10,7 @@ import { formatIDR } from '../../lib/money'
 import Select from '../ui/Select'
 import { useLocale } from '../LocaleProvider'
 import { getDateLocale } from '../../lib/dateLocale'
+import { translateCategoryName } from '../../lib/i18n'
 
 function rangeToDates(range: string, now: Date): { start: Date | null; end: Date | null } {
   switch (range) {
@@ -67,7 +68,7 @@ export default function AnalyticsCharts({ transactions, wallets }: { transaction
   const categoryMap: Record<string, { amount: number; icon: string; color: string }> = {}
   for (const tx of expenses) {
     const key = tx.category?.name ?? 'Lainnya'
-    if (!categoryMap[key]) categoryMap[key] = { amount: 0, icon: tx.category?.icon ?? '📌', color: tx.category?.color ?? '#888' }
+    if (!categoryMap[key]) categoryMap[key] = { amount: 0, icon: tx.category?.icon ?? '📌', color: tx.category?.color ?? 'var(--vault-text-dim)' }
     categoryMap[key].amount += tx.amount
   }
   const pieData = Object.entries(categoryMap)
@@ -101,8 +102,8 @@ export default function AnalyticsCharts({ transactions, wallets }: { transaction
     const d = payload[0].payload
     return (
       <div className="bg-vault-surface border border-vault-border rounded-xl p-3 text-xs font-mono shadow-xl">
-        <p className="text-vault-text font-semibold">{d.icon} {d.name}</p>
-        <p className="text-vault-gold mt-1">{formatIDR(d.amount)}</p>
+        <p className="text-vault-text font-semibold">{d.icon} {translateCategoryName(d.name, locale)}</p>
+        <p className="text-vault-accent mt-1">{formatIDR(d.amount)}</p>
         <p className="text-vault-text-dim">{totalExpense > 0 ? Math.round((d.amount / totalExpense) * 100) : 0}%</p>
       </div>
     )
@@ -136,7 +137,7 @@ export default function AnalyticsCharts({ transactions, wallets }: { transaction
                 type="date"
                 value={customStart}
                 onChange={e => setCustomStart(e.target.value)}
-                className="bg-vault-surface border border-vault-border rounded-lg px-3 py-2 text-sm font-mono text-vault-text focus:outline-none focus:border-vault-gold/50"
+                className="bg-vault-surface border border-vault-border rounded-lg px-3 py-2 text-sm font-mono text-vault-text focus:outline-none focus:border-vault-accent/50"
               />
             </div>
             <div>
@@ -145,7 +146,7 @@ export default function AnalyticsCharts({ transactions, wallets }: { transaction
                 type="date"
                 value={customEnd}
                 onChange={e => setCustomEnd(e.target.value)}
-                className="bg-vault-surface border border-vault-border rounded-lg px-3 py-2 text-sm font-mono text-vault-text focus:outline-none focus:border-vault-gold/50"
+                className="bg-vault-surface border border-vault-border rounded-lg px-3 py-2 text-sm font-mono text-vault-text focus:outline-none focus:border-vault-accent/50"
               />
             </div>
           </div>
@@ -156,7 +157,7 @@ export default function AnalyticsCharts({ transactions, wallets }: { transaction
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         {/* Donut chart */}
         <div className="bg-vault-card border border-vault-border rounded-2xl p-5">
-          <p className="font-display text-vault-gold tracking-widest text-lg mb-1">{t('analyticsCategory')}</p>
+          <p className="font-display text-vault-accent tracking-widest text-lg mb-1">{t('analyticsCategory')}</p>
           <p className="text-vault-text-dim text-xs font-mono mb-4">
             {walletLabel} · {rangeLabel} · {t('analyticsTotal')}: {formatIDR(totalExpense)}
           </p>
@@ -188,7 +189,7 @@ export default function AnalyticsCharts({ transactions, wallets }: { transaction
               <div key={d.name} className="flex items-center justify-between gap-2">
                 <div className="flex items-center gap-2">
                   <span className="w-2 h-2 rounded-full flex-shrink-0" style={{ backgroundColor: d.color }} />
-                  <span className="text-xs text-vault-text-dim font-mono">{d.icon} {d.name}</span>
+                  <span className="text-xs text-vault-text-dim font-mono">{d.icon} {translateCategoryName(d.name, locale)}</span>
                 </div>
                 <div className="flex items-center gap-2">
                   <span className="text-xs text-vault-text-dim font-mono">
@@ -203,7 +204,7 @@ export default function AnalyticsCharts({ transactions, wallets }: { transaction
 
         {/* Top spending */}
         <div className="bg-vault-card border border-vault-border rounded-2xl p-5">
-          <p className="font-display text-vault-gold tracking-widest text-lg mb-4">{t('analyticsTopSpending')}</p>
+          <p className="font-display text-vault-accent tracking-widest text-lg mb-4">{t('analyticsTopSpending')}</p>
           {pieData.length === 0 ? (
             <p className="text-vault-text-dim text-sm font-mono text-center py-8">{t('analyticsNoData')}</p>
           ) : (
@@ -217,7 +218,7 @@ export default function AnalyticsCharts({ transactions, wallets }: { transaction
                       <div className="flex items-center gap-2">
                         <span className="text-vault-text-dim font-mono text-xs w-4">#{i + 1}</span>
                         <span className="text-base">{cat.icon}</span>
-                        <span className="text-sm text-vault-text font-medium">{cat.name}</span>
+                        <span className="text-sm text-vault-text font-medium">{translateCategoryName(cat.name, locale)}</span>
                       </div>
                       <span className="text-sm font-mono text-vault-text font-semibold">{formatIDR(cat.amount)}</span>
                     </div>
@@ -235,20 +236,20 @@ export default function AnalyticsCharts({ transactions, wallets }: { transaction
 
       {/* Line chart trend */}
       <div className="bg-vault-card border border-vault-border rounded-2xl p-5">
-        <p className="font-display text-vault-gold tracking-widest text-lg mb-1">{t('analyticsTrend')}</p>
+        <p className="font-display text-vault-accent tracking-widest text-lg mb-1">{t('analyticsTrend')}</p>
         <p className="text-vault-text-dim text-xs font-mono mb-4">{walletLabel}</p>
         <ResponsiveContainer width="100%" height={220}>
           <LineChart data={trendData}>
-            <CartesianGrid strokeDasharray="3 3" stroke="#2A2A2A" />
-            <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{ fill: '#555', fontSize: 11, fontFamily: 'IBM Plex Mono' }} />
-            <YAxis axisLine={false} tickLine={false} tickFormatter={formatShort} tick={{ fill: '#555', fontSize: 10, fontFamily: 'IBM Plex Mono' }} width={44} />
+            <CartesianGrid strokeDasharray="3 3" stroke="var(--vault-border)" />
+            <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{ fill: 'var(--vault-text-dim)', fontSize: 11, fontFamily: 'IBM Plex Mono' }} />
+            <YAxis axisLine={false} tickLine={false} tickFormatter={formatShort} tick={{ fill: 'var(--vault-text-dim)', fontSize: 10, fontFamily: 'IBM Plex Mono' }} width={44} />
             <Tooltip
-              contentStyle={{ background: '#111', border: '1px solid #2A2A2A', borderRadius: 12, fontFamily: 'IBM Plex Mono', fontSize: 12 }}
-              labelStyle={{ color: '#888' }}
+              contentStyle={{ background: 'var(--vault-surface)', border: '1px solid var(--vault-border)', borderRadius: 12, fontFamily: 'IBM Plex Mono', fontSize: 12 }}
+              labelStyle={{ color: 'var(--vault-text-dim)' }}
               formatter={(v: number) => formatIDR(v)}
             />
-            <Line type="monotone" dataKey="income" name={t('in')} stroke="#C9A84C" strokeWidth={2} dot={{ fill: '#C9A84C', r: 4 }} activeDot={{ r: 6 }} />
-            <Line type="monotone" dataKey="expense" name={t('out')} stroke="#E03E3E" strokeWidth={2} dot={{ fill: '#E03E3E', r: 4 }} activeDot={{ r: 6 }} />
+            <Line type="monotone" dataKey="income" name={t('in')} stroke="var(--vault-accent)" strokeWidth={2} dot={{ fill: 'var(--vault-accent)', r: 4 }} activeDot={{ r: 6 }} />
+            <Line type="monotone" dataKey="expense" name={t('out')} stroke="var(--vault-danger)" strokeWidth={2} dot={{ fill: 'var(--vault-danger)', r: 4 }} activeDot={{ r: 6 }} />
           </LineChart>
         </ResponsiveContainer>
       </div>

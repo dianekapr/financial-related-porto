@@ -5,6 +5,7 @@ import { createClient } from '@portfolio/supabase'
 import type { Category, Budget } from '@portfolio/supabase'
 import { formatIDR } from '../../lib/money'
 import { useLocale } from '../LocaleProvider'
+import { translateCategoryName } from '../../lib/i18n'
 
 function ProgressBar({ pct, color }: { pct: number; color: string }) {
   const over = pct > 100
@@ -14,7 +15,7 @@ function ProgressBar({ pct, color }: { pct: number; color: string }) {
         className="h-full rounded-full transition-all duration-700"
         style={{
           width: `${Math.min(pct, 100)}%`,
-          backgroundColor: over ? '#E03E3E' : color,
+          backgroundColor: over ? 'var(--vault-danger)' : color,
         }}
       />
     </div>
@@ -32,7 +33,7 @@ export default function BudgetManager({
 }) {
   const router = useRouter()
   const supabase = createClient()
-  const { t } = useLocale()
+  const { t, locale } = useLocale()
   const [isPending, startTransition] = useTransition()
   const [editing, setEditing] = useState<string | null>(null)
   const [inputVal, setInputVal] = useState('')
@@ -79,18 +80,18 @@ export default function BudgetManager({
         <div className="flex items-end justify-between mb-3">
           <div>
             <p className="text-vault-text-dim text-xs font-mono uppercase tracking-widest">{t('budgetTotalThisMonth')}</p>
-            <p className="font-mono text-2xl text-vault-gold font-semibold mt-1">{formatIDR(totalBudget)}</p>
+            <p className="font-mono text-2xl text-vault-accent font-semibold mt-1">{formatIDR(totalBudget)}</p>
           </div>
           <div className="text-right">
             <p className="text-vault-text-dim text-xs font-mono">{t('budgetUsed')}</p>
-            <p className={`font-mono text-lg font-semibold ${totalSpent > totalBudget ? 'text-vault-red' : 'text-vault-text'}`}>
+            <p className={`font-mono text-lg font-semibold ${totalSpent > totalBudget ? 'text-vault-danger' : 'text-vault-text'}`}>
               {formatIDR(totalSpent)}
             </p>
           </div>
         </div>
         <ProgressBar
           pct={totalBudget > 0 ? Math.round((totalSpent / totalBudget) * 100) : 0}
-          color="#C9A84C"
+          color="var(--vault-accent)"
         />
         <p className="text-vault-text-dim text-xs font-mono mt-1.5 text-right">
           {t('budgetRemaining')}: {formatIDR(Math.max(0, totalBudget - totalSpent))}
@@ -114,7 +115,7 @@ export default function BudgetManager({
                     {cat.icon}
                   </div>
                   <div>
-                    <p className="text-sm font-medium text-vault-text">{cat.name}</p>
+                    <p className="text-sm font-medium text-vault-text">{translateCategoryName(cat.name, locale)}</p>
                     <p className="text-xs text-vault-text-dim font-mono">
                       {budget ? `${formatIDR(spent)} / ${formatIDR(budget.amount)}` : t('budgetNotSet')}
                     </p>
@@ -123,14 +124,14 @@ export default function BudgetManager({
                 <div className="flex items-center gap-1">
                   {budget && (
                     <button onClick={() => handleDelete(budget.id)}
-                      className="text-vault-muted hover:text-vault-red text-xs px-1.5 py-1 rounded transition-colors">✕</button>
+                      className="text-vault-muted hover:text-vault-danger text-xs px-1.5 py-1 rounded transition-colors">✕</button>
                   )}
                   <button
                     onClick={() => {
                       setEditing(cat.id)
                       setInputVal(budget ? String(budget.amount) : '')
                     }}
-                    className="text-vault-text-dim hover:text-vault-gold text-xs font-mono px-2 py-1 rounded border border-vault-border hover:border-vault-gold/30 transition-all"
+                    className="text-vault-text-dim hover:text-vault-accent text-xs font-mono px-2 py-1 rounded border border-vault-border hover:border-vault-accent/30 transition-all"
                   >
                     {budget ? t('budgetEdit') : t('budgetSetBtn')}
                   </button>
@@ -146,10 +147,10 @@ export default function BudgetManager({
                     onChange={e => setInputVal(e.target.value.replace(/[^0-9]/g, ''))}
                     placeholder={t('budgetAmountPlaceholder')}
                     autoFocus
-                    className="flex-1 bg-vault-surface border border-vault-border rounded-lg px-3 py-2 text-sm font-mono text-vault-text placeholder-vault-muted focus:outline-none focus:border-vault-gold/50"
+                    className="flex-1 bg-vault-surface border border-vault-border rounded-lg px-3 py-2 text-sm font-mono text-vault-text placeholder-vault-muted focus:outline-none focus:border-vault-accent/50"
                   />
                   <button onClick={() => handleSave(cat.id)} disabled={isPending}
-                    className="bg-vault-gold text-vault-bg rounded-lg px-3 py-2 text-xs font-mono font-semibold hover:bg-vault-gold-light transition-all disabled:opacity-50">
+                    className="bg-vault-accent text-vault-accent-contrast rounded-lg px-3 py-2 text-xs font-mono font-semibold hover:bg-vault-accent-light transition-all disabled:opacity-50">
                     {isPending ? '...' : t('ok')}
                   </button>
                   <button onClick={() => setEditing(null)}
@@ -161,9 +162,9 @@ export default function BudgetManager({
                 <>
                   <ProgressBar pct={pct} color={cat.color} />
                   <div className="flex justify-between items-center mt-1">
-                    <p className={`text-xs font-mono ${pct > 100 ? 'text-vault-red' : 'text-vault-text-dim'}`}>{pct}%</p>
+                    <p className={`text-xs font-mono ${pct > 100 ? 'text-vault-danger' : 'text-vault-text-dim'}`}>{pct}%</p>
                     {pct > 80 && (
-                      <p className={`text-xs font-mono ${pct > 100 ? 'text-vault-red' : 'text-amber-400'}`}>
+                      <p className={`text-xs font-mono ${pct > 100 ? 'text-vault-danger' : 'text-vault-warning'}`}>
                         {pct > 100 ? t('budgetOver') : t('budgetAlmostOut')}
                       </p>
                     )}

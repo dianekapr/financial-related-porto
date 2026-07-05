@@ -30,7 +30,7 @@ export default function Sidebar({ profile }: { profile: Profile | null }) {
   return (
     <aside className="hidden md:flex flex-col items-center w-20 min-h-dvh bg-vault-surface border-r border-vault-border py-6 gap-6 fixed left-0 top-0 z-40">
       {/* Logo */}
-      <Link href="/dashboard" className="font-display text-vault-gold text-2xl tracking-widest">V</Link>
+      <Link href="/dashboard" className="font-display text-vault-accent text-2xl tracking-widest">V</Link>
 
       {/* Nav */}
       <nav className="flex flex-col gap-1 flex-1 mt-4">
@@ -43,7 +43,7 @@ export default function Sidebar({ profile }: { profile: Profile | null }) {
               title={item.label}
               className={`w-12 h-12 flex items-center justify-center rounded-xl text-xl transition-all
                 ${active
-                  ? 'bg-vault-gold/15 text-vault-gold'
+                  ? 'bg-vault-accent/15 text-vault-accent'
                   : 'text-vault-muted hover:text-vault-text hover:bg-vault-card'
                 }`}
             >
@@ -58,11 +58,11 @@ export default function Sidebar({ profile }: { profile: Profile | null }) {
         {profile?.avatar_url ? (
           <Image src={profile.avatar_url} alt="avatar" width={36} height={36} className="rounded-full ring-2 ring-vault-border" />
         ) : (
-          <div className="w-9 h-9 rounded-full bg-vault-gold/20 flex items-center justify-center text-vault-gold text-sm font-mono">
+          <div className="w-9 h-9 rounded-full bg-vault-accent/20 flex items-center justify-center text-vault-accent text-sm font-mono">
             {profile?.full_name?.[0] ?? '?'}
           </div>
         )}
-        <button onClick={signOut} title={t('logout')} className="w-9 h-9 flex items-center justify-center text-vault-muted hover:text-vault-red transition-colors text-lg">
+        <button onClick={signOut} title={t('logout')} className="w-9 h-9 flex items-center justify-center text-vault-muted hover:text-vault-danger transition-colors text-lg">
           ⏻
         </button>
       </div>

@@ -1,51 +1,62 @@
 'use client'
 import { createContext, useContext, useEffect, useState } from 'react'
+import { SKINS, DEFAULT_SKIN, type SkinId, type SkinMode } from '@/lib/theme/skins'
 
-export const THEMES = [
-  { id: 'gold', label: 'Gold', accent: '#C9A84C' },
-  { id: 'ocean', label: 'Ocean', accent: '#3B82F6' },
-  { id: 'emerald', label: 'Emerald', accent: '#22C55E' },
-  { id: 'rose', label: 'Rose', accent: '#EC4899' },
-  { id: 'violet', label: 'Violet', accent: '#8B5CF6' },
-] as const
-
-export type ThemeId = typeof THEMES[number]['id']
 const STORAGE_KEY = 'vault-theme'
-const DEFAULT_THEME: ThemeId = 'gold'
 
-const ThemeContext = createContext<{ theme: ThemeId; setTheme: (t: ThemeId) => void }>({
-  theme: DEFAULT_THEME,
-  setTheme: () => {},
+function isSkinId(value: string | null): value is SkinId {
+  return !!value && SKINS.some(s => s.id === value)
+}
+
+interface ThemeContextValue {
+  skinId: SkinId
+  familyId: string
+  mode: SkinMode
+  setSkin: (id: SkinId) => void
+}
+
+const ThemeContext = createContext<ThemeContextValue>({
+  skinId: DEFAULT_SKIN,
+  familyId: SKINS.find(s => s.id === DEFAULT_SKIN)!.familyId,
+  mode: SKINS.find(s => s.id === DEFAULT_SKIN)!.mode,
+  setSkin: () => {},
 })
 
 export function useTheme() {
   return useContext(ThemeContext)
 }
 
-// Inline script that runs before hydration so the saved theme applies
-// immediately on load instead of flashing the default gold palette first.
+// Inline script that runs before hydration so the saved skin applies
+// immediately on load instead of flashing the default skin first. Values
+// from the old accent-only system (e.g. "gold", "ocean") won't match any
+// SkinId and are simply ignored, falling back to the default.
 export const themeInitScript = `
 try {
   var t = localStorage.getItem('${STORAGE_KEY}');
-  if (t) document.documentElement.setAttribute('data-theme', t);
+  var known = ${JSON.stringify(SKINS.map(s => s.id))};
+  if (t && known.indexOf(t) !== -1) document.documentElement.setAttribute('data-theme', t);
 } catch (e) {}
 `
 
 export default function ThemeProvider({ children }: { children: React.ReactNode }) {
-  const [theme, setThemeState] = useState<ThemeId>(DEFAULT_THEME)
+  const [skinId, setSkinState] = useState<SkinId>(DEFAULT_SKIN)
 
   useEffect(() => {
-    const stored = localStorage.getItem(STORAGE_KEY) as ThemeId | null
-    if (stored && THEMES.some(t => t.id === stored)) {
-      setThemeState(stored)
-    }
+    const stored = localStorage.getItem(STORAGE_KEY)
+    if (isSkinId(stored)) setSkinState(stored)
   }, [])
 
-  const setTheme = (t: ThemeId) => {
-    setThemeState(t)
-    document.documentElement.setAttribute('data-theme', t)
-    localStorage.setItem(STORAGE_KEY, t)
+  const setSkin = (id: SkinId) => {
+    setSkinState(id)
+    document.documentElement.setAttribute('data-theme', id)
+    localStorage.setItem(STORAGE_KEY, id)
   }
 
-  return <ThemeContext.Provider value={{ theme, setTheme }}>{children}</ThemeContext.Provider>
+  const skin = SKINS.find(s => s.id === skinId)!
+
+  return (
+    <ThemeContext.Provider value={{ skinId, familyId: skin.familyId, mode: skin.mode, setSkin }}>
+      {children}
+    </ThemeContext.Provider>
+  )
 }

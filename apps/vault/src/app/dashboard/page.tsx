@@ -64,7 +64,7 @@ export default async function DashboardPage() {
         </div>
         <div className="text-right">
           <p className="text-vault-text-dim text-xs font-mono">{t(locale, 'dashboardBalance')}</p>
-          <p className={`font-mono text-2xl font-semibold ${income - expense >= 0 ? 'text-vault-gold' : 'text-vault-red'}`}>
+          <p className={`font-mono text-2xl font-semibold ${income - expense >= 0 ? 'text-vault-accent' : 'text-vault-danger'}`}>
             {formatIDR(income - expense)}
           </p>
         </div>

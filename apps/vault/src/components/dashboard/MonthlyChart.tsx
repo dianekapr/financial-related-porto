@@ -58,10 +58,10 @@ export default function MonthlyChart({ transactions }: { transactions: Tx[] }) {
   return (
     <div className="bg-vault-card rounded-2xl border border-vault-border p-5">
       <div className="flex items-center justify-between mb-6">
-        <p className="font-display text-vault-gold tracking-widest text-lg">{t('monthlyChartTitle')}</p>
+        <p className="font-display text-vault-accent tracking-widest text-lg">{t('monthlyChartTitle')}</p>
         <div className="flex items-center gap-4 text-xs font-mono text-vault-text-dim">
-          <span className="flex items-center gap-1.5"><span className="w-2 h-2 rounded-sm bg-vault-gold inline-block" />{t('in')}</span>
-          <span className="flex items-center gap-1.5"><span className="w-2 h-2 rounded-sm bg-vault-red inline-block" />{t('out')}</span>
+          <span className="flex items-center gap-1.5"><span className="w-2 h-2 rounded-sm bg-vault-accent inline-block" />{t('in')}</span>
+          <span className="flex items-center gap-1.5"><span className="w-2 h-2 rounded-sm bg-vault-danger inline-block" />{t('out')}</span>
         </div>
       </div>
 
@@ -71,24 +71,24 @@ export default function MonthlyChart({ transactions }: { transactions: Tx[] }) {
             dataKey="name"
             axisLine={false}
             tickLine={false}
-            tick={{ fill: '#555', fontSize: 11, fontFamily: 'IBM Plex Mono' }}
+            tick={{ fill: 'var(--vault-text-dim)', fontSize: 11, fontFamily: 'IBM Plex Mono' }}
           />
           <YAxis
             axisLine={false}
             tickLine={false}
             tickFormatter={formatShort}
-            tick={{ fill: '#555', fontSize: 10, fontFamily: 'IBM Plex Mono' }}
+            tick={{ fill: 'var(--vault-text-dim)', fontSize: 10, fontFamily: 'IBM Plex Mono' }}
             width={40}
           />
-          <Tooltip content={<CustomTooltip inLabel={t('in')} outLabel={t('out')} />} cursor={{ fill: 'rgba(255,255,255,0.03)' }} />
+          <Tooltip content={<CustomTooltip inLabel={t('in')} outLabel={t('out')} />} cursor={{ fill: 'var(--vault-border)', opacity: 0.3 }} />
           <Bar dataKey="income" name="income" radius={[4, 4, 0, 0]}>
             {data.map((entry, i) => (
-              <Cell key={i} fill={entry.name === currentMonth ? '#C9A84C' : '#C9A84C44'} />
+              <Cell key={i} fill="var(--vault-accent)" fillOpacity={entry.name === currentMonth ? 1 : 0.3} />
             ))}
           </Bar>
           <Bar dataKey="expense" name="expense" radius={[4, 4, 0, 0]}>
             {data.map((entry, i) => (
-              <Cell key={i} fill={entry.name === currentMonth ? '#E03E3E' : '#E03E3E44'} />
+              <Cell key={i} fill="var(--vault-danger)" fillOpacity={entry.name === currentMonth ? 1 : 0.3} />
             ))}
           </Bar>
         </BarChart>

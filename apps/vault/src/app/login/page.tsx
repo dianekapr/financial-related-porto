@@ -54,7 +54,7 @@ export default function LoginPage() {
 
           <p className="text-vault-text-dim text-xs text-center">
             {t('loginTermsPrefix')}{' '}
-            <span className="text-vault-gold">{t('loginTerms')}</span>
+            <span className="text-vault-accent">{t('loginTerms')}</span>
           </p>
         </div>
 

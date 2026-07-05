@@ -16,7 +16,7 @@ export default function Select({
       <select
         value={value}
         onChange={e => onChange(e.target.value)}
-        className={`appearance-none bg-vault-surface border border-vault-border rounded-lg pl-3 pr-8 py-2 text-sm font-mono text-vault-text focus:outline-none focus:border-vault-gold/50 cursor-pointer transition-colors ${className}`}
+        className={`appearance-none bg-vault-surface border border-vault-border rounded-lg pl-3 pr-8 py-2 text-sm font-mono text-vault-text focus:outline-none focus:border-vault-accent/50 cursor-pointer transition-colors ${className}`}
       >
         {options.map(o => (
           <option key={o.value} value={o.value} className="bg-vault-surface text-vault-text">

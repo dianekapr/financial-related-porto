@@ -5,29 +5,34 @@ module.exports = {
   theme: {
     extend: {
       colors: {
-        // Most tokens read from CSS variables so a theme can swap the
-        // whole palette at runtime (see globals.css `[data-theme]` blocks).
-        // `red`/`red-muted` stay hardcoded on purpose: expense/danger
-        // should look the same regardless of which color theme is active.
+        // All tokens read from CSS variables so a Vault Skin can swap the
+        // whole palette at runtime (see lib/theme/skins.ts + ThemeStyleTag,
+        // which generate the `[data-theme]` variable blocks).
         vault: {
           bg: 'var(--vault-bg)',
           surface: 'var(--vault-surface)',
           card: 'var(--vault-card)',
           border: 'var(--vault-border)',
-          gold: 'var(--vault-accent)',
-          'gold-light': 'var(--vault-accent-light)',
-          red: '#E03E3E',
-          'red-muted': '#991F1F',
-          green: '#22C55E',
+          accent: 'var(--vault-accent)',
+          'accent-light': 'var(--vault-accent-light)',
+          'accent-hover': 'var(--vault-accent-hover)',
+          'accent-contrast': 'var(--vault-accent-contrast)',
           muted: 'var(--vault-muted)',
           text: 'var(--vault-text)',
           'text-dim': 'var(--vault-text-dim)',
+          success: 'var(--vault-success)',
+          warning: 'var(--vault-warning)',
+          danger: 'var(--vault-danger)',
+          info: 'var(--vault-info)',
         },
       },
       fontFamily: {
         display: ['var(--font-bebas)', 'sans-serif'],
         mono: ['var(--font-ibm-mono)', 'monospace'],
         sans: ['var(--font-inter)', 'sans-serif'],
+      },
+      boxShadow: {
+        vault: '0 8px 30px var(--vault-shadow)',
       },
       animation: {
         'ticker': 'ticker 20s linear infinite',

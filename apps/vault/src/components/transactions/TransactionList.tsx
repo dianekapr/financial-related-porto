@@ -8,6 +8,7 @@ import { createClient } from '@portfolio/supabase'
 import { formatIDR } from '../../lib/money'
 import { useLocale } from '../LocaleProvider'
 import { getDateLocale } from '../../lib/dateLocale'
+import { translateCategoryName } from '../../lib/i18n'
 
 // Group transactions by date
 function groupByDate(txs: Transaction[]) {
@@ -74,9 +75,9 @@ export default function TransactionList({
             <button key={filterType} onClick={() => setFilter('type', filterType)}
               className={`px-3 py-1.5 rounded-lg text-xs font-mono transition-all ${
                 type === filterType
-                  ? filterType === 'income' ? 'bg-vault-gold text-vault-bg font-semibold'
-                    : filterType === 'expense' ? 'bg-vault-red text-white font-semibold'
-                    : 'bg-vault-gold/20 text-vault-gold font-semibold'
+                  ? filterType === 'income' ? 'bg-vault-accent text-vault-accent-contrast font-semibold'
+                    : filterType === 'expense' ? 'bg-vault-danger text-white font-semibold'
+                    : 'bg-vault-accent/20 text-vault-accent font-semibold'
                   : 'text-vault-text-dim hover:text-vault-text'
               }`}>
               {filterType === 'all' ? t('all') : filterType === 'income' ? t('incomeToggle') : t('expenseToggle')}
@@ -85,7 +86,7 @@ export default function TransactionList({
         </div>
 
         <button onClick={() => setShowAdd(true)}
-          className="ml-auto flex items-center gap-1.5 bg-vault-gold/10 hover:bg-vault-gold/20 text-vault-gold border border-vault-gold/30 rounded-xl px-4 py-2 text-sm font-mono transition-all active:scale-95">
+          className="ml-auto flex items-center gap-1.5 bg-vault-accent/10 hover:bg-vault-accent/20 text-vault-accent border border-vault-accent/30 rounded-xl px-4 py-2 text-sm font-mono transition-all active:scale-95">
           {t('tickerAdd')}
         </button>
       </div>
@@ -93,9 +94,9 @@ export default function TransactionList({
       {/* Summary strip */}
       <div className="grid grid-cols-3 gap-3">
         {[
-          { label: t('in'), val: formatIDR(income), color: 'text-vault-gold' },
-          { label: t('out'), val: formatIDR(expense), color: 'text-vault-red' },
-          { label: t('balance'), val: formatIDR(walletBalance), color: walletBalance >= 0 ? 'text-green-400' : 'text-vault-red' },
+          { label: t('in'), val: formatIDR(income), color: 'text-vault-accent' },
+          { label: t('out'), val: formatIDR(expense), color: 'text-vault-danger' },
+          { label: t('balance'), val: formatIDR(walletBalance), color: walletBalance >= 0 ? 'text-vault-success' : 'text-vault-danger' },
         ].map(s => (
           <div key={s.label} className="bg-vault-card border border-vault-border rounded-xl p-3">
             <p className="text-vault-text-dim text-[10px] font-mono uppercase tracking-widest">{s.label}</p>
@@ -120,20 +121,20 @@ export default function TransactionList({
                 {txs.map(tx => (
                   <div key={tx.id} className="flex items-center gap-4 px-4 py-3.5 group hover:bg-vault-surface/50 transition-colors">
                     <div className="w-10 h-10 rounded-xl flex items-center justify-center text-lg flex-shrink-0"
-                      style={{ backgroundColor: `${tx.category?.color ?? '#C9A84C'}20` }}>
+                      style={{ backgroundColor: tx.category?.color ? `${tx.category.color}20` : 'color-mix(in srgb, var(--vault-accent) 20%, transparent)' }}>
                       {tx.category?.icon ?? (tx.type === 'income' ? '💰' : '💸')}
                     </div>
                     <div className="flex-1 min-w-0">
-                      <p className="text-sm font-medium text-vault-text truncate">{tx.note ?? tx.category?.name ?? t('fallbackTxName')}</p>
-                      {tx.category && <p className="text-xs text-vault-text-dim font-mono mt-0.5">{tx.category.name}</p>}
+                      <p className="text-sm font-medium text-vault-text truncate">{tx.note ?? (tx.category ? translateCategoryName(tx.category.name, locale) : t('fallbackTxName'))}</p>
+                      {tx.category && <p className="text-xs text-vault-text-dim font-mono mt-0.5">{translateCategoryName(tx.category.name, locale)}</p>}
                     </div>
-                    <p className={`font-mono text-sm font-semibold flex-shrink-0 ${tx.type === 'income' ? 'text-vault-gold' : 'text-vault-red'}`}>
+                    <p className={`font-mono text-sm font-semibold flex-shrink-0 ${tx.type === 'income' ? 'text-vault-accent' : 'text-vault-danger'}`}>
                       {tx.type === 'income' ? '+' : '−'}{formatIDR(tx.amount)}
                     </p>
                     <button
                       onClick={() => handleDelete(tx.id)}
                       disabled={deleting === tx.id}
-                      className="opacity-0 group-hover:opacity-100 text-vault-muted hover:text-vault-red transition-all text-xs font-mono px-2 py-1 rounded"
+                      className="opacity-0 group-hover:opacity-100 text-vault-muted hover:text-vault-danger transition-all text-xs font-mono px-2 py-1 rounded"
                     >
                       {deleting === tx.id ? '...' : '✕'}
                     </button>

@@ -1,5 +1,5 @@
 'use client'
-import { useState, useTransition, useRef } from 'react'
+import { useState, useRef } from 'react'
 import { useRouter } from 'next/navigation'
 import { createClient } from '@portfolio/supabase'
 import type { Bill, BillMember, BillItem, BillItemAssignment, ScannedReceipt } from '@portfolio/supabase'
@@ -48,8 +48,6 @@ export default function BillDetail({
   const toast = useToast()
   const cameraRef = useRef<HTMLInputElement>(null)
   const galleryRef = useRef<HTMLInputElement>(null)
-  const [isPending, startTransition] = useTransition()
-
   const [items, setItems] = useState<FullItem[]>(initialItems)
   const [scanning, setScanning] = useState(false)
   const [scanError, setScanError] = useState<string | null>(null)
@@ -399,6 +397,9 @@ export default function BillDetail({
                 currency={bill.currency}
                 readOnly={isSettled}
                 onToggle={(memberId) => toggleAssign(item.id, memberId)}
+                onEdit={isSettled ? undefined : (updates) => editItem(item.id, updates)}
+                onDelete={isSettled ? undefined : () => setDeletingItemId(item.id)}
+                onCustomSplit={isSettled ? undefined : (shares) => customSplit(item.id, shares)}
               />
             ))
           )}
@@ -475,6 +476,28 @@ export default function BillDetail({
           onClose={() => setShowSettle(false)}
         />
       )}
+
+      {showEditBill && (
+        <EditBillModal
+          bill={bill}
+          members={members}
+          onClose={() => setShowEditBill(false)}
+          onSaved={() => {
+            setShowEditBill(false)
+            router.refresh()
+          }}
+        />
+      )}
+
+      <ConfirmDialog
+        open={!!deletingItemId}
+        title="Hapus item?"
+        message="Item dan pembagiannya bakal ikut kehapus, ga bisa di-undo."
+        confirmLabel="Hapus"
+        danger
+        onConfirm={confirmDeleteItem}
+        onCancel={() => setDeletingItemId(null)}
+      />
     </div>
   )
 }

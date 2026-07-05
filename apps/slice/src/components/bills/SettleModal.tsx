@@ -5,10 +5,12 @@ import { createClient } from '@portfolio/supabase'
 import type { Bill, BillMember, BillItem, BillItemAssignment } from '@portfolio/supabase'
 import { formatMoney } from '../../lib/money'
 import { getInitial } from '../../lib/avatar'
-import { PartyPopper, MessageCircle, CircleCheck } from 'lucide-react'
+import { useToast } from '../Toast'
+import { PartyPopper, MessageCircle, CircleCheck, Zap } from 'lucide-react'
 
 type MemberWithTotal = BillMember & { total: number }
 type ItemWithAssignments = BillItem & { assignments: (BillItemAssignment & { member: BillMember | null })[] }
+type Transfer = { from: MemberWithTotal; to: MemberWithTotal; amount: number }
 
 function MemberDot({ member, size }: { member: BillMember; size: number }) {
   return (
@@ -21,12 +23,36 @@ function MemberDot({ member, size }: { member: BillMember; size: number }) {
   )
 }
 
-// One person fronted the whole bill — everyone else pays back exactly
-// what they ordered (their `total`), directly to the payer.
-function computeSettlement(members: MemberWithTotal[], payerId: string) {
-  return members
-    .filter(m => m.id !== payerId && m.total > 0.01)
-    .map(m => ({ from: m, amount: m.total }))
+const round2 = (n: number) => Math.round(n * 100) / 100
+
+// Greedy min-cash-flow: repeatedly match the biggest net debtor against the
+// biggest net creditor. Supports any number of people having fronted money
+// (not just one payer) — `paid` is however much each member actually put
+// down, `member.total` is however much of the itemized bill they're on the
+// hook for; the gap between the two is what they owe or are owed.
+// This doesn't guarantee the mathematically-fewest possible transfers, but
+// it's simple, deterministic, and plenty for group-of-friends bill sizes.
+function computeSettlements(members: MemberWithTotal[], paid: Record<string, number>): Transfer[] {
+  const nets = members.map(m => ({ member: m, net: round2((paid[m.id] ?? 0) - m.total) }))
+  const creditors = nets.filter(n => n.net > 0.01).map(n => ({ ...n })).sort((a, b) => b.net - a.net)
+  const debtors = nets
+    .filter(n => n.net < -0.01)
+    .map(n => ({ member: n.member, net: -n.net }))
+    .sort((a, b) => b.net - a.net)
+
+  const transfers: Transfer[] = []
+  let i = 0, j = 0
+  while (i < debtors.length && j < creditors.length) {
+    const d = debtors[i]
+    const c = creditors[j]
+    const amount = round2(Math.min(d.net, c.net))
+    if (amount > 0.01) transfers.push({ from: d.member, to: c.member, amount })
+    d.net = round2(d.net - amount)
+    c.net = round2(c.net - amount)
+    if (d.net <= 0.01) i++
+    if (c.net <= 0.01) j++
+  }
+  return transfers
 }
 
 // Renders a shareable "rincian" (breakdown) receipt image for one person:
@@ -38,8 +64,7 @@ async function buildReceiptImage(
   member: MemberWithTotal,
   items: ItemWithAssignments[],
   bill: Bill,
-  payer: MemberWithTotal | undefined,
-  amount: number
+  to: { member: MemberWithTotal; amount: number }[]
 ): Promise<Blob | null> {
   try {
     await Promise.race([
@@ -62,7 +87,8 @@ async function buildReceiptImage(
   const padX = 48
   const lineH = 34
   const headerH = 190
-  const footerH = payer && member.id !== payer.id ? 150 : 70
+  const transferBoxH = 92
+  const footerH = 60 + to.length * transferBoxH
   const height = headerH + myItems.length * lineH + 90 + footerH
 
   const canvas = document.createElement('canvas')
@@ -142,17 +168,19 @@ async function buildReceiptImage(
   ctx.fillText(formatMoney(member.total, bill.currency), width - padX, y)
   ctx.textAlign = 'left'
 
-  // Transfer instruction
-  if (payer && member.id !== payer.id) {
-    y += 50
+  // Transfer instruction(s) — one box per recipient, since one person can
+  // owe several different people out of the same pot of items
+  y += 50
+  for (const t of to) {
     ctx.fillStyle = colors.receipt
     ctx.fillRect(padX - 8, y - 34, width - (padX - 8) * 2, 80)
     ctx.font = '400 15px "Courier Prime", monospace'
     ctx.fillStyle = colors.muted
-    ctx.fillText(`Transfer ke ${payer.name}`, padX, y)
+    ctx.fillText(`Transfer ke ${t.member.name}`, padX, y)
     ctx.font = '700 26px "Fredoka One", sans-serif'
     ctx.fillStyle = colors.orange
-    ctx.fillText(formatMoney(amount, bill.currency), padX, y + 34)
+    ctx.fillText(formatMoney(t.amount, bill.currency), padX, y + 34)
+    y += transferBoxH
   }
 
   // Footer
@@ -175,32 +203,66 @@ export default function SettleModal({
 }) {
   const router = useRouter()
   const supabase = createClient()
+  const toast = useToast()
   const [isPending, startTransition] = useTransition()
   const [sharingId, setSharingId] = useState<string | null>(null)
-  const [payerId, setPayerId] = useState(
-    members.find(m => m.user_id === bill.owner_id)?.id ?? members[0]?.id ?? ''
-  )
-  const payer = members.find(m => m.id === payerId)
-  const settlements = payer ? computeSettlement(members, payerId) : []
+
+  const potTotal = round2(members.reduce((s, m) => s + m.total, 0))
+  const defaultPayer = members.find(m => m.user_id === bill.owner_id) ?? members[0]
+
+  const [paid, setPaid] = useState<Record<string, string>>(() => {
+    const init: Record<string, string> = {}
+    for (const m of members) init[m.id] = m.id === defaultPayer?.id ? String(potTotal) : '0'
+    return init
+  })
+
+  const paidNum = (id: string) => parseFloat(paid[id]) || 0
+  const totalPaid = round2(members.reduce((s, m) => s + paidNum(m.id), 0))
+  const remaining = round2(potTotal - totalPaid)
+
+  const transfers = computeSettlements(members, Object.fromEntries(members.map(m => [m.id, paidNum(m.id)])))
+
+  // One card per debtor: someone who owes money can owe several different
+  // creditors out of the same pot, so group by `from` instead of rendering
+  // a repeated card per pair
+  const transferGroups = transfers.reduce<{ from: MemberWithTotal; to: { member: MemberWithTotal; amount: number }[] }[]>((groups, t) => {
+    const existing = groups.find(g => g.from.id === t.from.id)
+    if (existing) existing.to.push({ member: t.to, amount: t.amount })
+    else groups.push({ from: t.from, to: [{ member: t.to, amount: t.amount }] })
+    return groups
+  }, [])
+
+  const setSinglePayer = (memberId: string) => {
+    setPaid(Object.fromEntries(members.map(m => [m.id, m.id === memberId ? String(potTotal) : '0'])))
+  }
 
   const handleSettle = async () => {
     startTransition(async () => {
+      if (transfers.length > 0) {
+        await supabase.from('payments').insert(
+          transfers.map(t => ({ bill_id: bill.id, from_member_id: t.from.id, to_member_id: t.to.id, amount: t.amount }))
+        )
+      }
       await supabase.from('bills').update({ is_settled: true }).eq('id', bill.id)
+      toast.show('Tagihan ditandai lunas.')
       router.push('/bills')
       onClose()
     })
   }
 
-  const shareToWA = async (from: MemberWithTotal, amount: number) => {
-    if (!payer) return
-    const text = `Hei ${from.name}! Tagihan "${bill.title}" udah dihitung nih\n` +
-      `Kamu perlu transfer ${formatMoney(amount, bill.currency)} ke ${payer.name} ya! Rincian di gambar ya\n\n` +
+  const shareToWA = async (group: { from: MemberWithTotal; to: { member: MemberWithTotal; amount: number }[] }) => {
+    const transferLines = group.to.length > 1
+      ? `Kamu perlu transfer:\n${group.to.map(t => `- ${formatMoney(t.amount, bill.currency)} ke ${t.member.name}`).join('\n')}\n\n`
+      : `Kamu perlu transfer ${formatMoney(group.to[0].amount, bill.currency)} ke ${group.to[0].member.name} ya!\n\n`
+    const text = `Hei ${group.from.name}! Tagihan "${bill.title}" udah dihitung nih\n` +
+      transferLines +
+      `Rincian di gambar ya\n\n` +
       `Dibuat pake SLICE — Split bill app`
 
-    setSharingId(from.id)
+    setSharingId(group.from.id)
     try {
-      const blob = await buildReceiptImage(from, items, bill, payer, amount)
-      const file = blob ? new File([blob], `rincian-${from.name}.png`, { type: 'image/png' }) : null
+      const blob = await buildReceiptImage(group.from, items, bill, group.to)
+      const file = blob ? new File([blob], `rincian-${group.from.name}.png`, { type: 'image/png' }) : null
 
       if (file && navigator.canShare?.({ files: [file] })) {
         await navigator.share({ files: [file], text, title: `Rincian tagihan ${bill.title}` })
@@ -241,21 +303,43 @@ export default function SettleModal({
         </div>
 
         <div className="p-6 space-y-4 max-h-[60vh] overflow-y-auto">
-          {/* Who paid upfront */}
+          {/* Who paid upfront — supports multiple people fronting money */}
           <div>
-            <label className="text-slice-muted text-xs font-receipt uppercase tracking-widest block mb-1.5">
-              Siapa yang bayar duluan?
+            <label className="text-slice-muted text-xs font-receipt uppercase tracking-widest block mb-2">
+              Siapa udah bayar berapa duluan?
             </label>
-            <select
-              value={payerId}
-              onChange={e => setPayerId(e.target.value)}
-              className="w-full border border-slice-border rounded-xl py-2.5 px-3 text-sm focus:outline-none focus:border-slice-orange/60 bg-slice-surface"
-            >
+            <div className="space-y-2">
               {members.map(m => (
-                <option key={m.id} value={m.id}>{m.name}</option>
+                <div key={m.id} className="flex items-center gap-2">
+                  <MemberDot member={m} size={22} />
+                  <span className="text-sm font-medium flex-1 truncate">{m.name}</span>
+                  <button
+                    onClick={() => setSinglePayer(m.id)}
+                    title={`${m.name} bayar semua duluan`}
+                    className="text-slice-text-dim hover:text-slice-orange transition-colors p-1"
+                  >
+                    <Zap size={14} />
+                  </button>
+                  <input
+                    type="text"
+                    inputMode="decimal"
+                    value={paid[m.id] ?? ''}
+                    onChange={e => setPaid(prev => ({ ...prev, [m.id]: e.target.value.replace(/[^0-9.]/g, '') }))}
+                    className="w-28 border border-slice-border rounded-lg px-2 py-1.5 text-sm font-receipt text-right focus:outline-none focus:border-slice-orange/60 bg-slice-surface"
+                  />
+                </div>
               ))}
-            </select>
+            </div>
+            <p className={`text-[11px] font-receipt text-right mt-1.5 ${remaining === 0 ? 'text-green-600' : 'text-orange-500'}`}>
+              {remaining === 0
+                ? 'Pas, semua sudah dialokasikan!'
+                : remaining > 0
+                  ? `Belum dialokasikan: ${formatMoney(remaining, bill.currency)}`
+                  : `Kelebihan: ${formatMoney(-remaining, bill.currency)}`}
+            </p>
           </div>
+
+          <hr className="receipt-divider" />
 
           {/* Per person breakdown */}
           <div>
@@ -266,9 +350,6 @@ export default function SettleModal({
                   <div className="flex items-center gap-2">
                     <MemberDot member={m} size={18} />
                     <span className="text-sm font-medium">{m.name}</span>
-                    {m.id === payerId && (
-                      <span className="text-[10px] text-green-600 bg-green-50 border border-green-200 rounded-full px-1.5 py-0.5">bayar duluan</span>
-                    )}
                   </div>
                   <span className="font-receipt font-bold text-sm" style={{ color: m.color }}>
                     {formatMoney(m.total, bill.currency)}
@@ -283,37 +364,48 @@ export default function SettleModal({
           {/* Settlement transactions */}
           <div>
             <p className="text-slice-muted text-xs font-receipt uppercase tracking-widest mb-3">Transfer yang perlu dilakukan</p>
-            {!payer ? (
-              <p className="text-slice-muted text-sm font-receipt text-center py-4">
-                Pilih siapa yang bayar duluan dulu.
-              </p>
-            ) : settlements.length === 0 ? (
+            {transferGroups.length === 0 ? (
               <p className="flex items-center justify-center gap-1.5 text-slice-muted text-sm font-receipt text-center py-4">
                 Ga ada yang perlu transfer! <PartyPopper size={16} />
               </p>
             ) : (
               <div className="space-y-3">
-                {settlements.map((s, i) => (
-                  <div key={i} className="bg-slice-surface rounded-2xl p-4 border border-slice-border">
-                    <div className="flex items-center gap-2 flex-wrap">
-                      <MemberDot member={s.from} size={20} />
-                      <span className="font-medium text-sm">{s.from.name}</span>
-                      <span className="text-slice-muted text-sm font-receipt">transfer ke</span>
-                      <MemberDot member={payer} size={20} />
-                      <span className="font-medium text-sm">{payer.name}</span>
+                {transferGroups.map(g => {
+                  const groupTotal = g.to.reduce((s, t) => s + t.amount, 0)
+                  return (
+                    <div key={g.from.id} className="bg-slice-surface rounded-2xl p-4 border border-slice-border">
+                      <div className="flex items-center gap-2 flex-wrap">
+                        <MemberDot member={g.from} size={20} />
+                        <span className="font-medium text-sm">{g.from.name}</span>
+                        <span className="text-slice-muted text-sm font-receipt">perlu transfer</span>
+                      </div>
+                      <div className="space-y-1.5 mt-2.5 pl-1">
+                        {g.to.map(t => (
+                          <div key={t.member.id} className="flex items-center justify-between">
+                            <div className="flex items-center gap-1.5">
+                              <span className="text-slice-muted text-xs font-receipt">ke</span>
+                              <MemberDot member={t.member} size={16} />
+                              <span className="text-xs font-medium">{t.member.name}</span>
+                            </div>
+                            <span className="font-receipt font-bold text-xs" style={{ color: t.member.color }}>
+                              {formatMoney(t.amount, bill.currency)}
+                            </span>
+                          </div>
+                        ))}
+                      </div>
+                      <div className="flex items-center justify-between mt-2.5 pt-2.5 border-t border-dashed border-slice-border">
+                        <p className="font-display text-slice-orange text-xl">{formatMoney(groupTotal, bill.currency)}</p>
+                        <button
+                          onClick={() => shareToWA(g)}
+                          disabled={sharingId === g.from.id}
+                          className="flex items-center gap-1.5 bg-green-500 text-white rounded-xl px-3 py-1.5 text-xs font-medium hover:bg-green-600 transition-all disabled:opacity-60"
+                        >
+                          <MessageCircle size={14} /> {sharingId === g.from.id ? 'Nyiapin...' : `WA ${g.from.name}`}
+                        </button>
+                      </div>
                     </div>
-                    <div className="flex items-center justify-between mt-2">
-                      <p className="font-display text-slice-orange text-xl">{formatMoney(s.amount, bill.currency)}</p>
-                      <button
-                        onClick={() => shareToWA(s.from, s.amount)}
-                        disabled={sharingId === s.from.id}
-                        className="flex items-center gap-1.5 bg-green-500 text-white rounded-xl px-3 py-1.5 text-xs font-medium hover:bg-green-600 transition-all disabled:opacity-60"
-                      >
-                        <MessageCircle size={14} /> {sharingId === s.from.id ? 'Nyiapin...' : `WA ${s.from.name}`}
-                      </button>
-                    </div>
-                  </div>
-                ))}
+                  )
+                })}
               </div>
             )}
           </div>

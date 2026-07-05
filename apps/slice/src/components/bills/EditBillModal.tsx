@@ -1,95 +1,126 @@
 'use client'
-import { useState, useTransition } from 'react'
-import { useRouter } from 'next/navigation'
+import { useState } from 'react'
 import { createClient } from '@portfolio/supabase'
-import { X, ArrowRight } from 'lucide-react'
+import type { Bill, BillMember } from '@portfolio/supabase'
+import { X, Loader2 } from 'lucide-react'
 import { getInitial } from '../../lib/avatar'
 import { MEMBER_COLORS as COLORS, CURRENCIES } from '../../lib/billConstants'
+import ConfirmDialog from '../ConfirmDialog'
+import { useToast } from '../Toast'
 
-export default function CreateBillModal({ onClose }: { onClose: () => void }) {
-  const router = useRouter()
+type EditableMember = { id?: string; name: string; color: string }
+
+export default function EditBillModal({
+  bill, members, onClose, onSaved,
+}: {
+  bill: Bill
+  members: BillMember[]
+  onClose: () => void
+  onSaved: () => void
+}) {
   const supabase = createClient()
-  const [isPending, startTransition] = useTransition()
+  const toast = useToast()
+  const [saving, setSaving] = useState(false)
 
-  const [title, setTitle] = useState('')
-  const [date, setDate] = useState(new Date().toISOString().split('T')[0])
-  const [currency, setCurrency] = useState('IDR')
-  const [members, setMembers] = useState<{ name: string; color: string }[]>([
-    { name: '', color: COLORS[0] },
-    { name: '', color: COLORS[1] },
-  ])
+  const [title, setTitle] = useState(bill.title)
+  const [date, setDate] = useState(bill.date)
+  const [currency, setCurrency] = useState(bill.currency)
+  const [memberList, setMemberList] = useState<EditableMember[]>(members.map(m => ({ id: m.id, name: m.name, color: m.color })))
+  const [removedIds, setRemovedIds] = useState<string[]>([])
+  const [removeIdx, setRemoveIdx] = useState<number | null>(null)
+
+  const activeCount = memberList.length
+  const canSave = title.trim() && activeCount >= 2 && !saving
+
+  const updateMember = (i: number, field: 'name' | 'color', val: string) => {
+    setMemberList(prev => prev.map((m, j) => j === i ? { ...m, [field]: val } : m))
+  }
 
   const addMember = () => {
-    const idx = members.length % COLORS.length
-    setMembers(prev => [...prev, { name: '', color: COLORS[idx] }])
+    const idx = memberList.length % COLORS.length
+    setMemberList(prev => [...prev, { name: '', color: COLORS[idx] }])
   }
 
-  const removeMember = (i: number) => setMembers(prev => prev.filter((_, j) => j !== i))
-
-  const updateMember = (i: number, field: string, val: string) => {
-    setMembers(prev => prev.map((m, j) => j === i ? { ...m, [field]: val } : m))
+  const removeMember = (i: number) => {
+    const m = memberList[i]
+    if (m.id) {
+      setRemoveIdx(i)
+    } else {
+      setMemberList(prev => prev.filter((_, j) => j !== i))
+    }
   }
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault()
-    const validMembers = members.filter(m => m.name.trim())
-    if (!title.trim() || validMembers.length < 2) return
+  const confirmRemove = () => {
+    if (removeIdx === null) return
+    const m = memberList[removeIdx]
+    if (m.id) setRemovedIds(prev => [...prev, m.id!])
+    setMemberList(prev => prev.filter((_, j) => j !== removeIdx))
+    setRemoveIdx(null)
+  }
 
-    const { data: { session } } = await supabase.auth.getSession()
-    if (!session) return
+  const handleSave = async () => {
+    if (!canSave) return
+    setSaving(true)
 
-    startTransition(async () => {
-      // Create bill
-      const { data: bill, error } = await supabase
-        .from('bills')
-        .insert({ owner_id: session.user.id, title: title.trim(), date, total: 0, currency })
-        .select()
-        .single()
+    const { error: billError } = await supabase
+      .from('bills')
+      .update({ title: title.trim(), date, currency })
+      .eq('id', bill.id)
 
-      if (error || !bill) return
+    if (billError) {
+      setSaving(false)
+      toast.show('Gagal update tagihan, coba lagi.', 'error')
+      return
+    }
 
-      // Create members
+    if (removedIds.length > 0) {
+      await supabase.from('bill_members').delete().in('id', removedIds)
+    }
+
+    const renamed = memberList.filter(m => m.id)
+    for (const m of renamed) {
+      await supabase.from('bill_members').update({ name: m.name.trim(), color: m.color }).eq('id', m.id)
+    }
+
+    const brandNew = memberList.filter(m => !m.id && m.name.trim())
+    if (brandNew.length > 0) {
       await supabase.from('bill_members').insert(
-        validMembers.map(m => ({
-          bill_id: bill.id,
-          name: m.name.trim(),
-          color: m.color,
-        }))
+        brandNew.map(m => ({ bill_id: bill.id, name: m.name.trim(), color: m.color }))
       )
+    }
 
-      router.push(`/bills/${bill.id}`)
-      onClose()
-    })
+    setSaving(false)
+    toast.show('Tagihan diperbarui.')
+    onSaved()
   }
 
   return (
     <div className="fixed inset-0 z-50 flex items-end md:items-center justify-center">
       <div className="absolute inset-0 bg-black/40 backdrop-blur-sm" onClick={onClose} />
       <div className="relative w-full md:max-w-md bg-white rounded-t-3xl md:rounded-3xl shadow-2xl animate-print overflow-hidden">
-        {/* Handle */}
         <div className="md:hidden w-10 h-1 bg-slice-border rounded-full mx-auto mt-3" />
 
-        {/* Orange header */}
-        <div className="bg-slice-orange px-6 py-5">
-          <h2 className="font-display text-white text-2xl">Buat Tagihan Baru</h2>
-          <p className="text-orange-100 text-xs font-receipt mt-1">Isi detail & tambahkan siapa yang ikut</p>
+        <div className="bg-slice-dark px-6 py-5 flex items-center justify-between">
+          <div>
+            <h2 className="font-display text-white text-2xl">Kelola Tagihan</h2>
+            <p className="text-gray-300 text-xs font-receipt mt-1">Ubah detail & siapa yang ikut</p>
+          </div>
+          <button onClick={onClose} className="text-gray-300 hover:text-white transition-colors">
+            <X size={20} />
+          </button>
         </div>
 
         <div className="p-6 space-y-4 max-h-[70vh] overflow-y-auto">
-          {/* Title */}
           <div>
             <label className="text-slice-muted text-xs font-receipt uppercase tracking-widest block mb-1.5">Nama Tagihan</label>
             <input
               type="text"
               value={title}
               onChange={e => setTitle(e.target.value)}
-              placeholder="Makan malam bareng, Bensin jalan..."
-              required
               className="w-full border border-slice-border rounded-xl py-3 px-4 text-sm focus:outline-none focus:border-slice-orange/60 bg-slice-surface transition-colors"
             />
           </div>
 
-          {/* Date & currency */}
           <div className="flex gap-3">
             <div className="flex-1">
               <label className="text-slice-muted text-xs font-receipt uppercase tracking-widest block mb-1.5">Tanggal</label>
@@ -112,24 +143,20 @@ export default function CreateBillModal({ onClose }: { onClose: () => void }) {
             </div>
           </div>
 
-          {/* Members */}
           <div>
             <label className="text-slice-muted text-xs font-receipt uppercase tracking-widest block mb-2">
-              Siapa Aja? ({members.filter(m => m.name.trim()).length} orang)
+              Siapa Aja? ({activeCount} orang)
             </label>
             <div className="space-y-3">
-              {members.map((m, i) => (
-                <div key={i} className="flex items-start gap-2">
-                  {/* Color-only avatar preview */}
+              {memberList.map((m, i) => (
+                <div key={m.id ?? `new-${i}`} className="flex items-start gap-2">
                   <div
                     className="w-11 h-11 flex-shrink-0 flex items-center justify-center rounded-xl font-display text-lg text-white"
                     style={{ backgroundColor: m.color }}
                   >
                     {getInitial(m.name || `Orang ${i + 1}`)}
                   </div>
-
                   <div className="flex-1 space-y-1.5">
-                    {/* Name */}
                     <input
                       type="text"
                       value={m.name}
@@ -138,8 +165,6 @@ export default function CreateBillModal({ onClose }: { onClose: () => void }) {
                       className="w-full border border-slice-border rounded-xl py-2.5 px-3 text-sm focus:outline-none focus:border-slice-orange/60 bg-slice-surface transition-colors"
                       style={{ borderLeftColor: m.color, borderLeftWidth: 3 }}
                     />
-
-                    {/* Color swatches */}
                     <div className="flex flex-wrap gap-1.5">
                       {COLORS.map(c => (
                         <button
@@ -149,17 +174,13 @@ export default function CreateBillModal({ onClose }: { onClose: () => void }) {
                           className="w-5 h-5 rounded-full transition-transform hover:scale-125"
                           style={{
                             backgroundColor: c,
-                            ...(m.color === c && {
-                              boxShadow: `0 0 0 2px white, 0 0 0 4px ${c}`,
-                              outline: 'none'
-                            })
+                            ...(m.color === c && { boxShadow: `0 0 0 2px white, 0 0 0 4px ${c}`, outline: 'none' })
                           }}
                         />
                       ))}
                     </div>
                   </div>
-
-                  {members.length > 2 && (
+                  {memberList.length > 2 && (
                     <button onClick={() => removeMember(i)} className="mt-2.5 text-slate-300 hover:text-red-400 transition-colors">
                       <X size={16} />
                     </button>
@@ -167,7 +188,6 @@ export default function CreateBillModal({ onClose }: { onClose: () => void }) {
                 </div>
               ))}
             </div>
-
             <button
               type="button"
               onClick={addMember}
@@ -177,16 +197,26 @@ export default function CreateBillModal({ onClose }: { onClose: () => void }) {
             </button>
           </div>
 
-          {/* Submit */}
           <button
-            onClick={handleSubmit}
-            disabled={isPending || !title.trim() || members.filter(m => m.name.trim()).length < 2}
-            className="w-full bg-slice-orange text-white rounded-xl py-3.5 font-display text-lg hover:bg-slice-orange-light active:scale-[0.98] transition-all disabled:opacity-50 shadow-md"
+            onClick={handleSave}
+            disabled={!canSave}
+            className="w-full bg-slice-orange text-white rounded-xl py-3.5 font-display text-lg hover:bg-slice-orange-light active:scale-[0.98] transition-all disabled:opacity-50 shadow-md flex items-center justify-center gap-2"
           >
-            {isPending ? 'Membuat...' : <span className="inline-flex items-center gap-1.5">Buat Tagihan <ArrowRight size={18} /></span>}
+            {saving ? <Loader2 size={18} className="animate-spin" /> : null}
+            {saving ? 'Menyimpan...' : 'Simpan Perubahan'}
           </button>
         </div>
       </div>
+
+      <ConfirmDialog
+        open={removeIdx !== null}
+        title="Hapus orang ini?"
+        message="Semua pembagian item yang udah di-assign ke orang ini bakal ikut kehapus."
+        confirmLabel="Hapus"
+        danger
+        onConfirm={confirmRemove}
+        onCancel={() => setRemoveIdx(null)}
+      />
     </div>
   )
 }

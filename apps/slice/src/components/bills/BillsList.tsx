@@ -7,6 +7,8 @@ import type { Bill, BillMember } from '@portfolio/supabase'
 import { format } from 'date-fns'
 import { id as localeId } from 'date-fns/locale'
 import CreateBillModal from './CreateBillModal'
+import ConfirmDialog from '../ConfirmDialog'
+import { useToast } from '../Toast'
 import { formatMoney } from '../../lib/money'
 import { getInitial } from '../../lib/avatar'
 import { Plus, Receipt, Loader2, Trash2 } from 'lucide-react'
@@ -16,22 +18,31 @@ type BillWithMembers = Bill & { members: BillMember[] }
 export default function BillsList({ bills }: { bills: BillWithMembers[] }) {
   const router = useRouter()
   const supabase = createClient()
+  const toast = useToast()
   const [showCreate, setShowCreate] = useState(false)
   const [deletingId, setDeletingId] = useState<string | null>(null)
+  const [pendingDelete, setPendingDelete] = useState<BillWithMembers | null>(null)
 
-  const handleDelete = async (e: React.MouseEvent, bill: BillWithMembers) => {
+  const requestDelete = (e: React.MouseEvent, bill: BillWithMembers) => {
     e.preventDefault()
     e.stopPropagation()
-    if (!window.confirm(`Hapus tagihan "${bill.title}"? Semua item & pembagian di dalamnya ikut terhapus, ga bisa di-undo.`)) return
+    setPendingDelete(bill)
+  }
+
+  const confirmDelete = async () => {
+    const bill = pendingDelete
+    if (!bill) return
 
     setDeletingId(bill.id)
     const { error } = await supabase.from('bills').delete().eq('id', bill.id)
     setDeletingId(null)
+    setPendingDelete(null)
     if (error) {
       console.error('Delete bill failed:', error)
-      window.alert('Gagal hapus tagihan, coba lagi.')
+      toast.show('Gagal hapus tagihan, coba lagi.', 'error')
       return
     }
+    toast.show('Tagihan dihapus.')
     router.refresh()
   }
 
@@ -100,7 +111,7 @@ export default function BillsList({ bills }: { bills: BillWithMembers[] }) {
               </Link>
 
               <button
-                onClick={e => handleDelete(e, bill)}
+                onClick={e => requestDelete(e, bill)}
                 disabled={deletingId === bill.id}
                 title="Hapus tagihan"
                 className="absolute top-4 right-4 w-7 h-7 flex items-center justify-center rounded-full text-slice-text-dim hover:text-red-500 hover:bg-red-50 transition-colors disabled:opacity-50"
@@ -113,6 +124,17 @@ export default function BillsList({ bills }: { bills: BillWithMembers[] }) {
       )}
 
       {showCreate && <CreateBillModal onClose={() => setShowCreate(false)} />}
+
+      <ConfirmDialog
+        open={!!pendingDelete}
+        title="Hapus tagihan?"
+        message={pendingDelete ? `Hapus tagihan "${pendingDelete.title}"? Semua item & pembagian di dalamnya ikut terhapus, ga bisa di-undo.` : ''}
+        confirmLabel="Hapus"
+        danger
+        loading={!!deletingId}
+        onConfirm={confirmDelete}
+        onCancel={() => setPendingDelete(null)}
+      />
     </div>
   )
 }

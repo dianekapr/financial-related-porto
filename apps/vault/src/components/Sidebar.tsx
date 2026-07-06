@@ -31,7 +31,9 @@ export default function Sidebar({ profile }: { profile: Profile | null }) {
   return (
     <aside className="hidden md:flex flex-col items-center w-20 min-h-dvh bg-vault-surface border-r border-vault-border py-6 gap-6 fixed left-0 top-0 z-40">
       {/* Logo */}
-      <Link href="/dashboard" className="font-display text-vault-accent text-2xl tracking-widest">V</Link>
+      <Link href="/dashboard" className="flex items-center justify-center">
+        <Image src="/logo.png" alt="Vault" width={40} height={40} className="object-contain" priority />
+      </Link>
 
       {/* Nav */}
       <nav className="flex flex-col gap-1 flex-1 mt-4">

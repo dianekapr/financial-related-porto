@@ -3,6 +3,7 @@ import { createClient } from '@portfolio/supabase'
 import { useState } from 'react'
 import { BarChart3, Target, TrendingUp } from 'lucide-react'
 import { useLocale } from '../../components/LocaleProvider'
+import Image from 'next/image'
 
 export default function LoginPage() {
   const [loading, setLoading] = useState(false)
@@ -26,6 +27,7 @@ export default function LoginPage() {
       <div className="relative w-full max-w-sm">
         {/* Logo */}
         <div className="text-center mb-12">
+          <Image src="/logo.png" alt="Vault" width={80} height={80} className="mx-auto object-contain mb-2" priority />
           <h1 className="font-display text-8xl gold-shimmer tracking-widest">VAULT</h1>
           <p className="text-vault-text-dim text-sm font-mono mt-2 tracking-[0.3em] uppercase">
             Your Money. Your Rules.

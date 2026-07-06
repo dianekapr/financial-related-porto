@@ -48,7 +48,7 @@ create table public.categories (
   id uuid default uuid_generate_v4() primary key,
   user_id uuid references auth.users on delete cascade not null,
   name text not null,
-  icon text not null default '💰',
+  icon text not null default 'Wallet',
   color text not null default '#C9A84C',
   budget_limit numeric(12,2),
   created_at timestamptz default now(),
@@ -66,15 +66,15 @@ create or replace function public.seed_default_categories()
 returns trigger as $$
 begin
   insert into public.categories (user_id, name, icon, color) values
-    (new.id, 'Makan & Minum', '🍜', '#E03E3E'),
-    (new.id, 'Transport', '🚗', '#C9A84C'),
-    (new.id, 'Belanja', '🛍️', '#8B5CF6'),
-    (new.id, 'Hiburan', '🎬', '#06B6D4'),
-    (new.id, 'Kesehatan', '💊', '#22C55E'),
-    (new.id, 'Tagihan', '📄', '#F97316'),
-    (new.id, 'Gaji', '💰', '#C9A84C'),
-    (new.id, 'Freelance', '💻', '#22C55E'),
-    (new.id, 'Lainnya', '📌', '#888888')
+    (new.id, 'Makan & Minum', 'Utensils', '#E03E3E'),
+    (new.id, 'Transport', 'Car', '#C9A84C'),
+    (new.id, 'Belanja', 'ShoppingBag', '#8B5CF6'),
+    (new.id, 'Hiburan', 'Clapperboard', '#06B6D4'),
+    (new.id, 'Kesehatan', 'Pill', '#22C55E'),
+    (new.id, 'Tagihan', 'Receipt', '#F97316'),
+    (new.id, 'Gaji', 'Banknote', '#C9A84C'),
+    (new.id, 'Freelance', 'Laptop', '#22C55E'),
+    (new.id, 'Lainnya', 'Tag', '#888888')
   on conflict (user_id, name) do nothing;
   return new;
 end;
@@ -101,6 +101,32 @@ create policy "Users manage own wallets" on public.wallets
   for all using (auth.uid() = user_id);
 
 -- ============================================================
+-- VAULT — RECURRING TRANSACTIONS (rules that spawn real transactions)
+-- ============================================================
+create table public.recurring_transactions (
+  id uuid default uuid_generate_v4() primary key,
+  user_id uuid references auth.users on delete cascade not null,
+  amount numeric(12,2) not null check (amount > 0),
+  type text not null check (type in ('income', 'expense')),
+  category_id uuid references public.categories on delete set null,
+  wallet_id uuid references public.wallets on delete set null,
+  note text,
+  frequency text not null check (frequency in ('daily', 'weekly', 'monthly')),
+  -- Date of the next occurrence still owed to the user; advanced by one
+  -- interval each time it's materialized into a real transaction (see
+  -- processDueRecurring, run when the dashboard loads)
+  next_run_date date not null,
+  is_active boolean not null default true,
+  created_at timestamptz default now()
+);
+
+alter table public.recurring_transactions enable row level security;
+create policy "Users manage own recurring transactions" on public.recurring_transactions
+  for all using (auth.uid() = user_id);
+
+create index recurring_transactions_due on public.recurring_transactions(user_id, next_run_date) where is_active;
+
+-- ============================================================
 -- VAULT — TRANSACTIONS
 -- ============================================================
 create table public.transactions (
@@ -112,7 +138,14 @@ create table public.transactions (
   wallet_id uuid references public.wallets on delete set null,
   note text,
   date date not null default current_date,
-  created_at timestamptz default now()
+  created_at timestamptz default now(),
+  -- Wallet-to-wallet transfers are stored as a linked expense+income pair
+  -- sharing this id, so they can be excluded from income/expense totals
+  -- (they're not real earnings or spending) while still showing up in
+  -- transaction lists as a single moved-money event
+  transfer_group_id uuid,
+  -- Set when this row was auto-generated from a recurring rule
+  recurring_id uuid references public.recurring_transactions on delete set null
 );
 
 alter table public.transactions enable row level security;
@@ -120,6 +153,7 @@ create policy "Users manage own transactions" on public.transactions
   for all using (auth.uid() = user_id);
 
 create index transactions_user_date on public.transactions(user_id, date desc);
+create index transactions_transfer_group on public.transactions(transfer_group_id) where transfer_group_id is not null;
 
 -- ============================================================
 -- VAULT — BUDGETS
@@ -165,8 +199,7 @@ create table public.bill_members (
   bill_id uuid references public.bills on delete cascade not null,
   user_id uuid references auth.users on delete set null,
   name text not null,
-  color text not null default '#FF5E1A',
-  avatar_emoji text not null default '🧑'
+  color text not null default '#FF5E1A'
 );
 
 alter table public.bill_members enable row level security;
@@ -336,3 +369,57 @@ create policy "Receipt owner can read" on storage.objects
 --   for all using (auth.uid() = user_id);
 --
 -- alter table public.transactions add column if not exists wallet_id uuid references public.wallets on delete set null;
+
+-- ============================================================
+-- MIGRATION — run manually in SQL Editor to switch `categories.icon`
+-- from emoji glyphs to lucide-react icon names (frontend renders
+-- <CategoryIcon icon={category.icon} />, see src/lib/categoryIcons.tsx)
+-- ============================================================
+-- alter table public.categories alter column icon set default 'Wallet';
+--
+-- update public.categories set icon = case name
+--   when 'Makan & Minum' then 'Utensils'
+--   when 'Transport' then 'Car'
+--   when 'Belanja' then 'ShoppingBag'
+--   when 'Hiburan' then 'Clapperboard'
+--   when 'Kesehatan' then 'Pill'
+--   when 'Tagihan' then 'Receipt'
+--   when 'Gaji' then 'Banknote'
+--   when 'Freelance' then 'Laptop'
+--   when 'Lainnya' then 'Tag'
+--   else 'Wallet'
+-- end
+-- where icon not in ('Utensils', 'Car', 'ShoppingBag', 'Clapperboard', 'Pill', 'Receipt', 'Banknote', 'Laptop', 'Tag', 'Wallet');
+
+-- ============================================================
+-- MIGRATION — run manually in SQL Editor if `transactions` already
+-- exists (adds the Wallet Transfer feature)
+-- ============================================================
+-- alter table public.transactions add column if not exists transfer_group_id uuid;
+-- create index if not exists transactions_transfer_group on public.transactions(transfer_group_id) where transfer_group_id is not null;
+
+-- ============================================================
+-- MIGRATION — run manually in SQL Editor if `transactions` already
+-- exists (adds the Recurring Transactions feature)
+-- ============================================================
+-- create table if not exists public.recurring_transactions (
+--   id uuid default uuid_generate_v4() primary key,
+--   user_id uuid references auth.users on delete cascade not null,
+--   amount numeric(12,2) not null check (amount > 0),
+--   type text not null check (type in ('income', 'expense')),
+--   category_id uuid references public.categories on delete set null,
+--   wallet_id uuid references public.wallets on delete set null,
+--   note text,
+--   frequency text not null check (frequency in ('daily', 'weekly', 'monthly')),
+--   next_run_date date not null,
+--   is_active boolean not null default true,
+--   created_at timestamptz default now()
+-- );
+--
+-- alter table public.recurring_transactions enable row level security;
+-- create policy "Users manage own recurring transactions" on public.recurring_transactions
+--   for all using (auth.uid() = user_id);
+--
+-- create index if not exists recurring_transactions_due on public.recurring_transactions(user_id, next_run_date) where is_active;
+--
+-- alter table public.transactions add column if not exists recurring_id uuid references public.recurring_transactions on delete set null;

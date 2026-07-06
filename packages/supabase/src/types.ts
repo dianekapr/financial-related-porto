@@ -49,6 +49,26 @@ export interface Transaction {
   note: string | null
   date: string
   created_at: string
+  transfer_group_id: string | null
+  recurring_id: string | null
+}
+
+export type RecurringFrequency = 'daily' | 'weekly' | 'monthly'
+
+export interface RecurringTransaction {
+  id: string
+  user_id: string
+  amount: number
+  type: TransactionType
+  category_id: string | null
+  category?: Category
+  wallet_id: string | null
+  wallet?: Wallet
+  note: string | null
+  frequency: RecurringFrequency
+  next_run_date: string
+  is_active: boolean
+  created_at: string
 }
 
 export interface Budget {
@@ -93,7 +113,6 @@ export interface BillMember {
   user_id: string | null
   name: string
   color: string
-  avatar_emoji: string
   total_owed?: number // computed
 }
 

@@ -2,6 +2,7 @@
 import { createClient } from '@portfolio/supabase'
 import { useState } from 'react'
 import { Smile } from 'lucide-react'
+import Image from 'next/image'
 
 export default function LoginPage() {
   const [loading, setLoading] = useState(false)
@@ -26,7 +27,7 @@ export default function LoginPage() {
         <div className="bg-white rounded-3xl shadow-xl overflow-hidden border border-slice-border">
           {/* Receipt header */}
           <div className="bg-slice-orange px-6 pt-8 pb-6 text-center">
-            <h1 className="font-display text-white text-5xl tracking-wide">SLICE</h1>
+            <Image src="/logo.png" alt="Slice" width={96} height={96} className="mx-auto object-contain" priority />
             <p className="text-orange-100 text-sm font-receipt mt-1">Split tagihan, gak pusing</p>
           </div>
 
@@ -77,10 +78,13 @@ export default function LoginPage() {
           {/* Barcode decoration */}
           <div className="px-6 pb-6 flex flex-col items-center gap-2">
             <div className="flex gap-0.5">
-              {Array.from({ length: 40 }, (_, i) => (
-                <div key={i} className="bg-slice-dark/20 rounded-sm"
-                  style={{ width: Math.random() > 0.5 ? 2 : 1, height: 28 + Math.random() * 8 }} />
-              ))}
+              {Array.from({ length: 40 }, (_, i) => {
+                const seeded = (n: number) => { const x = Math.sin(n) * 10000; return x - Math.floor(x) }
+                return (
+                  <div key={i} className="bg-slice-dark/20 rounded-sm"
+                    style={{ width: seeded(i) > 0.5 ? 2 : 1, height: Math.round((28 + seeded(i + 0.5) * 8) * 100) / 100 }} />
+                )
+              })}
             </div>
             <p className="font-receipt text-slice-text-dim text-[10px] tracking-widest">SLICE 2026 by DYN</p>
           </div>

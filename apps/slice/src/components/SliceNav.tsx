@@ -21,8 +21,8 @@ export default function SliceNav({ profile }: { profile: Profile | null }) {
     <header className="bg-white border-b border-slice-border sticky top-0 z-40 shadow-sm">
       <div className="max-w-2xl mx-auto px-4 h-14 flex items-center justify-between gap-4">
         {/* Logo */}
-        <Link href="/bills" className="font-display text-slice-orange text-2xl tracking-wide">
-          SLICE
+        <Link href="/bills" className="flex items-center">
+          <Image src="/logo.png" alt="Slice" width={36} height={36} className="object-contain" priority />
         </Link>
 
         {/* Nav */}

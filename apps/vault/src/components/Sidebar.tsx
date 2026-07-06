@@ -6,6 +6,7 @@ import Image from 'next/image'
 import type { Profile } from '@portfolio/supabase'
 import { useRouter } from 'next/navigation'
 import { useLocale } from './LocaleProvider'
+import { LayoutDashboard, ArrowLeftRight, WalletCards, PiggyBank, BarChart3, Settings, Power } from 'lucide-react'
 
 export default function Sidebar({ profile }: { profile: Profile | null }) {
   const pathname = usePathname()
@@ -14,12 +15,12 @@ export default function Sidebar({ profile }: { profile: Profile | null }) {
   const { t } = useLocale()
 
   const NAV = [
-    { href: '/dashboard', icon: '◈', label: t('nav') },
-    { href: '/dashboard/transactions', icon: '↕', label: t('navTransactions') },
-    { href: '/dashboard/wallets', icon: '▣', label: t('navWallets') },
-    { href: '/dashboard/budget', icon: '◎', label: t('navBudget') },
-    { href: '/dashboard/analytics', icon: '▲', label: t('navAnalytics') },
-    { href: '/dashboard/settings', icon: '⚙', label: t('navSettings') },
+    { href: '/dashboard', icon: LayoutDashboard, label: t('nav') },
+    { href: '/dashboard/transactions', icon: ArrowLeftRight, label: t('navTransactions') },
+    { href: '/dashboard/wallets', icon: WalletCards, label: t('navWallets') },
+    { href: '/dashboard/budget', icon: PiggyBank, label: t('navBudget') },
+    { href: '/dashboard/analytics', icon: BarChart3, label: t('navAnalytics') },
+    { href: '/dashboard/settings', icon: Settings, label: t('navSettings') },
   ]
 
   const signOut = async () => {
@@ -36,18 +37,19 @@ export default function Sidebar({ profile }: { profile: Profile | null }) {
       <nav className="flex flex-col gap-1 flex-1 mt-4">
         {NAV.map((item) => {
           const active = pathname === item.href || (item.href !== '/dashboard' && pathname.startsWith(item.href))
+          const Icon = item.icon
           return (
             <Link
               key={item.href}
               href={item.href}
               title={item.label}
-              className={`w-12 h-12 flex items-center justify-center rounded-xl text-xl transition-all
+              className={`w-12 h-12 flex items-center justify-center rounded-xl transition-all
                 ${active
                   ? 'bg-vault-accent/15 text-vault-accent'
                   : 'text-vault-muted hover:text-vault-text hover:bg-vault-card'
                 }`}
             >
-              {item.icon}
+              <Icon className="w-5 h-5" />
             </Link>
           )
         })}
@@ -62,8 +64,8 @@ export default function Sidebar({ profile }: { profile: Profile | null }) {
             {profile?.full_name?.[0] ?? '?'}
           </div>
         )}
-        <button onClick={signOut} title={t('logout')} className="w-9 h-9 flex items-center justify-center text-vault-muted hover:text-vault-danger transition-colors text-lg">
-          ⏻
+        <button onClick={signOut} title={t('logout')} className="w-9 h-9 flex items-center justify-center text-vault-muted hover:text-vault-danger transition-colors">
+          <Power className="w-4 h-4" />
         </button>
       </div>
     </aside>

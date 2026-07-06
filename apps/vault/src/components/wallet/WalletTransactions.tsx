@@ -3,10 +3,12 @@ import { useState, useTransition } from 'react'
 import { useRouter } from 'next/navigation'
 import type { Transaction } from '@portfolio/supabase'
 import { format } from 'date-fns'
-import { formatIDR } from '../../lib/money'
+import AddTransactionModal from '@/components/AddTransactionModal'
+import TransactionRow from '../transactions/TransactionRow'
 import { useLocale } from '../LocaleProvider'
 import { getDateLocale } from '../../lib/dateLocale'
 import { translateCategoryName } from '../../lib/i18n'
+import { Search } from 'lucide-react'
 
 function groupByDate(txs: Transaction[]) {
   const groups: Record<string, Transaction[]> = {}
@@ -21,6 +23,8 @@ export default function WalletTransactions({ transactions }: { transactions: Tra
   const router = useRouter()
   const { t, locale } = useLocale()
   const [deleting, setDeleting] = useState<string | null>(null)
+  const [editingTx, setEditingTx] = useState<Transaction | null>(null)
+  const [search, setSearch] = useState('')
   const [, startTransition] = useTransition()
 
   const handleDelete = async (id: string) => {
@@ -31,9 +35,7 @@ export default function WalletTransactions({ transactions }: { transactions: Tra
     setDeleting(null)
   }
 
-  const grouped = groupByDate(transactions)
-
-  if (grouped.length === 0) {
+  if (transactions.length === 0) {
     return (
       <div className="bg-vault-card border border-vault-border rounded-2xl p-12 text-center">
         <p className="text-vault-text-dim font-mono">{t('walletEmptyTransactions')}</p>
@@ -41,8 +43,33 @@ export default function WalletTransactions({ transactions }: { transactions: Tra
     )
   }
 
+  const searchedTransactions = transactions.filter(tx => {
+    const q = search.trim().toLowerCase()
+    if (!q) return true
+    const catName = tx.category ? translateCategoryName(tx.category.name, locale).toLowerCase() : ''
+    return (tx.note?.toLowerCase().includes(q) ?? false) || catName.includes(q)
+  })
+  const grouped = groupByDate(searchedTransactions)
+
   return (
     <div className="space-y-4">
+      <div className="relative">
+        <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-vault-text-dim" />
+        <input
+          type="text"
+          value={search}
+          onChange={e => setSearch(e.target.value)}
+          placeholder={t('searchTxPlaceholder')}
+          className="w-full bg-vault-card border border-vault-border rounded-xl py-2.5 pl-10 pr-4 text-sm text-vault-text placeholder-vault-muted focus:outline-none focus:border-vault-accent/50 transition-colors"
+        />
+      </div>
+
+      {grouped.length === 0 && (
+        <div className="bg-vault-card border border-vault-border rounded-2xl p-12 text-center">
+          <p className="text-vault-text-dim font-mono">{t('noSearchResults')}</p>
+        </div>
+      )}
+
       {grouped.map(([date, txs]) => (
         <div key={date}>
           <p className="text-vault-text-dim text-xs font-mono uppercase tracking-widest mb-2 px-1">
@@ -50,30 +77,19 @@ export default function WalletTransactions({ transactions }: { transactions: Tra
           </p>
           <div className="bg-vault-card border border-vault-border rounded-2xl divide-y divide-vault-border overflow-hidden">
             {txs.map(tx => (
-              <div key={tx.id} className="flex items-center gap-4 px-4 py-3.5 group hover:bg-vault-surface/50 transition-colors">
-                <div className="w-10 h-10 rounded-xl flex items-center justify-center text-lg flex-shrink-0"
-                  style={{ backgroundColor: tx.category?.color ? `${tx.category.color}20` : 'color-mix(in srgb, var(--vault-accent) 20%, transparent)' }}>
-                  {tx.category?.icon ?? (tx.type === 'income' ? '↑' : '↓')}
-                </div>
-                <div className="flex-1 min-w-0">
-                  <p className="text-sm font-medium text-vault-text truncate">{tx.note ?? (tx.category ? translateCategoryName(tx.category.name, locale) : t('fallbackTxName'))}</p>
-                  {tx.category && <p className="text-xs text-vault-text-dim font-mono mt-0.5">{translateCategoryName(tx.category.name, locale)}</p>}
-                </div>
-                <p className={`font-mono text-sm font-semibold flex-shrink-0 ${tx.type === 'income' ? 'text-vault-accent' : 'text-vault-danger'}`}>
-                  {tx.type === 'income' ? '+' : '−'}{formatIDR(tx.amount)}
-                </p>
-                <button
-                  onClick={() => handleDelete(tx.id)}
-                  disabled={deleting === tx.id}
-                  className="opacity-0 group-hover:opacity-100 text-vault-muted hover:text-vault-danger transition-all text-xs font-mono px-2 py-1 rounded"
-                >
-                  {deleting === tx.id ? '...' : '✕'}
-                </button>
-              </div>
+              <TransactionRow
+                key={tx.id}
+                tx={tx}
+                subtitle={tx.category ? translateCategoryName(tx.category.name, locale) : undefined}
+                onEdit={setEditingTx}
+                onDelete={handleDelete}
+                deleting={deleting === tx.id}
+              />
             ))}
           </div>
         </div>
       ))}
+      {editingTx && <AddTransactionModal transaction={editingTx} onClose={() => setEditingTx(null)} />}
     </div>
   )
 }

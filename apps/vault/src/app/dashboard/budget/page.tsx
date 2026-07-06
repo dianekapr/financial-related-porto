@@ -3,14 +3,18 @@ import BudgetManager from '@/components/budget/BudgetManager'
 import { t } from '@/lib/i18n'
 import { getServerLocale } from '@/lib/getServerLocale'
 
-export default async function BudgetPage() {
+export default async function BudgetPage({
+  searchParams,
+}: {
+  searchParams: { month?: string; year?: string }
+}) {
   const supabase = createServerSupabaseClient()
   const { data: { session } } = await supabase.auth.getSession()
   const locale = getServerLocale()
 
   const now = new Date()
-  const month = now.getMonth() + 1
-  const year = now.getFullYear()
+  const month = parseInt(searchParams.month ?? String(now.getMonth() + 1))
+  const year = parseInt(searchParams.year ?? String(now.getFullYear()))
 
   const startDate = `${year}-${String(month).padStart(2, '0')}-01`
   const endDate = new Date(year, month, 0).toISOString().split('T')[0]
@@ -18,7 +22,7 @@ export default async function BudgetPage() {
   const [{ data: categories }, { data: budgets }, { data: transactions }] = await Promise.all([
     supabase.from('categories').select('*').eq('user_id', session!.user.id),
     supabase.from('budgets').select('*, category:categories(*)').eq('user_id', session!.user.id).eq('month', month).eq('year', year),
-    supabase.from('transactions').select('amount, type, category_id').eq('user_id', session!.user.id).eq('type', 'expense').gte('date', startDate).lte('date', endDate),
+    supabase.from('transactions').select('amount, type, category_id').eq('user_id', session!.user.id).eq('type', 'expense').is('transfer_group_id', null).gte('date', startDate).lte('date', endDate),
   ])
 
   return (

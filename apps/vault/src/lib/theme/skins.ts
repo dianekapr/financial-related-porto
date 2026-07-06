@@ -26,7 +26,7 @@ export interface SkinColors {
 export interface SkinFamily {
   id: string
   label: string
-  emoji: string
+  icon: string
   tagline: string
 }
 
@@ -39,14 +39,14 @@ export interface Skin {
 }
 
 export const SKIN_FAMILIES: SkinFamily[] = [
-  { id: 'gold', label: 'Gold Reserve', emoji: '🏆', tagline: 'Luxury finance — charcoal with gold highlights' },
-  { id: 'sakura', label: 'Sakura Bloom', emoji: '🌸', tagline: 'Soft, elegant pink' },
-  { id: 'ocean', label: 'Ocean Deep', emoji: '🌊', tagline: 'Professional blue' },
-  { id: 'forest', label: 'Emerald Forest', emoji: '🌿', tagline: 'Calm green' },
-  { id: 'lavender', label: 'Lavender Mist', emoji: '💜', tagline: 'Soft purple aesthetic' },
-  { id: 'crimson', label: 'Crimson Vault', emoji: '❤️', tagline: 'Premium crimson red' },
-  { id: 'arctic', label: 'Arctic Ice', emoji: '🧊', tagline: 'Modern cyan' },
-  { id: 'pearl', label: 'Pearl', emoji: '🤍', tagline: 'Minimal monochrome' },
+  { id: 'gold', label: 'Gold (Default)', icon: 'Trophy', tagline: 'For those who love timeless luxury' },
+  { id: 'sakura', label: 'Sakura', icon: 'Flower2', tagline: 'For pretty gens who love pink' },
+  { id: 'ocean', label: 'Ocean', icon: 'Waves', tagline: 'For cool minds who love blue' },
+  { id: 'forest', label: 'Forest', icon: 'Trees', tagline: 'For nature souls who love green' },
+  { id: 'lavender', label: 'Lavender', icon: 'Sparkles', tagline: 'For dreamy souls who love purple' },
+  { id: 'crimson', label: 'Crimson', icon: 'Heart', tagline: 'For bold hearts who love red' },
+  { id: 'arctic', label: 'Arctic', icon: 'Snowflake', tagline: 'For clean aesthetics and icy vibes' },
+  { id: 'pearl', label: 'Pearl', icon: 'Gem', tagline: 'For minimalists who love simplicity' },
 ]
 
 const FAMILY_COLORS: Record<string, Record<SkinMode, SkinColors>> = {

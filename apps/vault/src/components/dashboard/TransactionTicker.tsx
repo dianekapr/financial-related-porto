@@ -3,11 +3,12 @@ import { useState } from 'react'
 import type { Transaction } from '@portfolio/supabase'
 import { format } from 'date-fns'
 import AddTransactionModal from '@/components/AddTransactionModal'
+import TransactionRow from '../transactions/TransactionRow'
 import Link from 'next/link'
-import { formatIDR } from '../../lib/money'
 import { useLocale } from '../LocaleProvider'
 import { getDateLocale } from '../../lib/dateLocale'
 import { translateCategoryName } from '../../lib/i18n'
+import { ChevronRight } from 'lucide-react'
 
 export default function TransactionTicker({ transactions }: { transactions: Transaction[] }) {
   const [showAdd, setShowAdd] = useState(false)
@@ -28,8 +29,9 @@ export default function TransactionTicker({ transactions }: { transactions: Tran
           >
             {t('tickerAdd')}
           </button>
-          <Link href="/dashboard/transactions" className="text-vault-text-dim hover:text-vault-text text-sm font-mono transition-colors">
+          <Link href="/dashboard/transactions" className="flex items-center gap-0.5 text-vault-text-dim hover:text-vault-text text-sm font-mono transition-colors">
             {t('tickerSeeAll')}
+            <ChevronRight className="w-3.5 h-3.5" />
           </Link>
         </div>
       </div>
@@ -45,32 +47,11 @@ export default function TransactionTicker({ transactions }: { transactions: Tran
           </div>
         ) : (
           transactions.slice(0, 20).map((tx, i) => (
-            <div
-              key={tx.id}
-              className="flex items-center gap-4 px-5 py-3.5 hover:bg-vault-surface/50 transition-colors animate-fade-up"
-              style={{ animationDelay: `${i * 30}ms`, animationFillMode: 'backwards' }}
-            >
-              {/* Category icon */}
-              <div
-                className="w-10 h-10 rounded-xl flex items-center justify-center text-lg flex-shrink-0"
-                style={{ backgroundColor: tx.category?.color ? `${tx.category.color}20` : 'color-mix(in srgb, var(--vault-accent) 20%, transparent)' }}
-              >
-                {tx.category?.icon ?? (tx.type === 'income' ? '💰' : '💸')}
-              </div>
-
-              {/* Info */}
-              <div className="flex-1 min-w-0">
-                <p className="text-sm font-medium text-vault-text truncate">{tx.note ?? (tx.category ? translateCategoryName(tx.category.name, locale) : t('fallbackTxName'))}</p>
-                <p className="text-xs text-vault-text-dim font-mono mt-0.5">
-                  {format(new Date(tx.date), 'd MMM yyyy', { locale: getDateLocale(locale) })}
-                  {tx.category && ` · ${translateCategoryName(tx.category.name, locale)}`}
-                </p>
-              </div>
-
-              {/* Amount */}
-              <p className={`font-mono text-sm font-semibold flex-shrink-0 ${tx.type === 'income' ? 'text-vault-accent' : 'text-vault-danger'}`}>
-                {tx.type === 'income' ? '+' : '−'}{formatIDR(tx.amount)}
-              </p>
+            <div key={tx.id} className="animate-fade-up" style={{ animationDelay: `${i * 30}ms`, animationFillMode: 'backwards' }}>
+              <TransactionRow
+                tx={tx}
+                subtitle={`${format(new Date(tx.date), 'd MMM yyyy', { locale: getDateLocale(locale) })}${tx.category ? ` · ${translateCategoryName(tx.category.name, locale)}` : ''}`}
+              />
             </div>
           ))
         )}

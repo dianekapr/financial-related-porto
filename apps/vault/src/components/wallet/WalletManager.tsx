@@ -4,8 +4,10 @@ import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import { createClient } from '@portfolio/supabase'
 import type { Wallet } from '@portfolio/supabase'
+import WalletTransferModal from './WalletTransferModal'
 import { formatIDR } from '../../lib/money'
 import { useLocale } from '../LocaleProvider'
+import { ArrowLeftRight, X } from 'lucide-react'
 
 const COLORS = ['#C9A84C', '#8B5CF6', '#06B6D4', '#22C55E', '#F97316', '#E03E3E']
 
@@ -16,6 +18,7 @@ export default function WalletManager({ wallets }: { wallets: Wallet[] }) {
   const [isPending, startTransition] = useTransition()
 
   const [showAdd, setShowAdd] = useState(false)
+  const [showTransfer, setShowTransfer] = useState(false)
   const [newName, setNewName] = useState('')
   const [newBalance, setNewBalance] = useState('')
   const [newColor, setNewColor] = useState(COLORS[0])
@@ -71,9 +74,20 @@ export default function WalletManager({ wallets }: { wallets: Wallet[] }) {
   return (
     <div className="space-y-4">
       {/* Total overview */}
-      <div className="bg-vault-card border border-vault-border rounded-2xl p-5">
-        <p className="text-vault-text-dim text-xs font-mono uppercase tracking-widest">{t('walletsTotalBalance')}</p>
-        <p className="font-mono text-2xl text-vault-accent font-semibold mt-1">{formatIDR(totalBalance)}</p>
+      <div className="bg-vault-card border border-vault-border rounded-2xl p-5 flex items-end justify-between gap-3">
+        <div>
+          <p className="text-vault-text-dim text-xs font-mono uppercase tracking-widest">{t('walletsTotalBalance')}</p>
+          <p className="font-mono text-2xl text-vault-accent font-semibold mt-1">{formatIDR(totalBalance)}</p>
+        </div>
+        {wallets.length >= 2 && (
+          <button
+            onClick={() => setShowTransfer(true)}
+            className="flex items-center gap-1.5 bg-vault-accent/10 hover:bg-vault-accent/20 text-vault-accent border border-vault-accent/30 rounded-xl px-4 py-2 text-sm font-mono transition-all active:scale-95 flex-shrink-0"
+          >
+            <ArrowLeftRight className="w-3.5 h-3.5" />
+            {t('walletTransferBtn')}
+          </button>
+        )}
       </div>
 
       {/* Wallet list */}
@@ -92,7 +106,7 @@ export default function WalletManager({ wallets }: { wallets: Wallet[] }) {
                 </Link>
                 <div className="flex items-center gap-1">
                   <button onClick={() => handleDelete(w.id)}
-                    className="text-vault-muted hover:text-vault-danger text-xs px-1.5 py-1 rounded transition-colors">✕</button>
+                    className="text-vault-muted hover:text-vault-danger px-1.5 py-1 rounded transition-colors"><X className="w-3.5 h-3.5" /></button>
                   <button
                     onClick={() => { setEditingId(w.id); setEditValue(String(w.balance)) }}
                     className="text-vault-text-dim hover:text-vault-accent text-xs font-mono px-2 py-1 rounded border border-vault-border hover:border-vault-accent/30 transition-all"
@@ -118,7 +132,7 @@ export default function WalletManager({ wallets }: { wallets: Wallet[] }) {
                     {isPending ? '...' : t('ok')}
                   </button>
                   <button onClick={() => setEditingId(null)}
-                    className="text-vault-text-dim hover:text-vault-text px-2 text-xs font-mono">✕</button>
+                    className="text-vault-text-dim hover:text-vault-text px-2"><X className="w-3.5 h-3.5" /></button>
                 </div>
               )}
             </div>
@@ -176,6 +190,8 @@ export default function WalletManager({ wallets }: { wallets: Wallet[] }) {
           {t('walletAddBtn')}
         </button>
       )}
+
+      {showTransfer && <WalletTransferModal wallets={wallets} onClose={() => setShowTransfer(false)} />}
     </div>
   )
 }

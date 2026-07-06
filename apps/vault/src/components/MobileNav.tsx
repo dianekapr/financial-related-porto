@@ -2,18 +2,19 @@
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 import { useLocale } from './LocaleProvider'
+import { LayoutDashboard, ArrowLeftRight, WalletCards, PiggyBank, BarChart3, Settings } from 'lucide-react'
 
 export default function MobileNav() {
   const pathname = usePathname()
   const { t } = useLocale()
 
   const NAV = [
-    { href: '/dashboard', icon: '◈', label: t('navHome') },
-    { href: '/dashboard/transactions', icon: '↕', label: t('navTransactions') },
-    { href: '/dashboard/wallets', icon: '▣', label: t('navWallets') },
-    { href: '/dashboard/budget', icon: '◎', label: t('navBudget') },
-    { href: '/dashboard/analytics', icon: '▲', label: t('navAnalytics') },
-    { href: '/dashboard/settings', icon: '⚙', label: t('navSettings') },
+    { href: '/dashboard', icon: LayoutDashboard, label: t('navHome') },
+    { href: '/dashboard/transactions', icon: ArrowLeftRight, label: t('navTransactions') },
+    { href: '/dashboard/wallets', icon: WalletCards, label: t('navWallets') },
+    { href: '/dashboard/budget', icon: PiggyBank, label: t('navBudget') },
+    { href: '/dashboard/analytics', icon: BarChart3, label: t('navAnalytics') },
+    { href: '/dashboard/settings', icon: Settings, label: t('navSettings') },
   ]
 
   return (
@@ -21,6 +22,7 @@ export default function MobileNav() {
       <div className="flex items-center justify-around py-2">
         {NAV.map((item) => {
           const active = pathname === item.href || (item.href !== '/dashboard' && pathname.startsWith(item.href))
+          const Icon = item.icon
           return (
             <Link
               key={item.href}
@@ -28,7 +30,7 @@ export default function MobileNav() {
               className={`flex flex-col items-center gap-0.5 px-3 py-2 rounded-xl transition-all
                 ${active ? 'text-vault-accent' : 'text-vault-muted'}`}
             >
-              <span className="text-xl">{item.icon}</span>
+              <Icon className="w-5 h-5" />
               <span className="text-[10px] font-mono tracking-wide">{item.label}</span>
             </Link>
           )

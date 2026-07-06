@@ -1,6 +1,7 @@
 'use client'
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, Cell } from 'recharts'
 import { format, subMonths, startOfMonth, endOfMonth } from 'date-fns'
+import { ArrowUp, ArrowDown } from 'lucide-react'
 import { formatIDR } from '../../lib/money'
 import { useLocale } from '../LocaleProvider'
 import { getDateLocale } from '../../lib/dateLocale'
@@ -40,8 +41,11 @@ function CustomTooltip({ active, payload, label, inLabel, outLabel }: any) {
     <div className="bg-vault-surface border border-vault-border rounded-xl p-3 shadow-xl text-xs font-mono">
       <p className="text-vault-text-dim mb-2 uppercase tracking-widest">{label}</p>
       {payload.map((p: any) => (
-        <p key={p.name} style={{ color: p.fill }} className="flex justify-between gap-4">
-          <span>{p.name === 'income' ? `↑ ${inLabel}` : `↓ ${outLabel}`}</span>
+        <p key={p.name} style={{ color: p.fill }} className="flex justify-between items-center gap-4">
+          <span className="flex items-center gap-1">
+            {p.name === 'income' ? <ArrowUp className="w-3 h-3" /> : <ArrowDown className="w-3 h-3" />}
+            {p.name === 'income' ? inLabel : outLabel}
+          </span>
           <span>{formatIDR(p.value)}</span>
         </p>
       ))}

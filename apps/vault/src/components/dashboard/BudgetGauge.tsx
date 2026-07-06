@@ -3,6 +3,7 @@ import type { Budget, Transaction } from '@portfolio/supabase'
 import { formatIDR } from '../../lib/money'
 import { useLocale } from '../LocaleProvider'
 import { translateCategoryName } from '../../lib/i18n'
+import { CategoryIcon } from '../../lib/categoryIcons'
 
 function CircleGauge({ pct, color }: { pct: number; color: string }) {
   const r = 20
@@ -65,7 +66,7 @@ export default function BudgetGauge({ budgets, transactions }: { budgets: Budget
             <CircleGauge pct={pct} color={b.category?.color ?? 'var(--vault-accent)'} />
             <div className="flex-1 min-w-0">
               <div className="flex items-center gap-1.5">
-                <span className="text-base">{b.category?.icon ?? '💰'}</span>
+                <CategoryIcon icon={b.category?.icon} className="w-4 h-4" style={{ color: b.category?.color }} />
                 <p className="text-sm font-medium text-vault-text truncate">{b.category?.name ? translateCategoryName(b.category.name, locale) : ''}</p>
               </div>
               <p className={`text-xs font-mono mt-0.5 ${over ? 'text-vault-danger' : 'text-vault-text-dim'}`}>

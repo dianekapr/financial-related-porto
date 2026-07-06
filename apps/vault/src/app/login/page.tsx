@@ -1,6 +1,7 @@
 'use client'
 import { createClient } from '@portfolio/supabase'
 import { useState } from 'react'
+import { BarChart3, Target, TrendingUp } from 'lucide-react'
 import { useLocale } from '../../components/LocaleProvider'
 
 export default function LoginPage() {
@@ -61,12 +62,12 @@ export default function LoginPage() {
         {/* Features hint */}
         <div className="mt-8 grid grid-cols-3 gap-3 text-center">
           {[
-            { icon: '📊', label: t('loginFeatureTrack') },
-            { icon: '🎯', label: t('loginFeatureBudget') },
-            { icon: '📈', label: t('loginFeatureAnalysis') },
+            { icon: BarChart3, label: t('loginFeatureTrack') },
+            { icon: Target, label: t('loginFeatureBudget') },
+            { icon: TrendingUp, label: t('loginFeatureAnalysis') },
           ].map((f) => (
             <div key={f.label} className="glass rounded-xl p-3">
-              <div className="text-xl mb-1">{f.icon}</div>
+              <f.icon className="w-5 h-5 mb-1 mx-auto text-vault-accent" />
               <p className="text-vault-text-dim text-[10px] leading-tight">{f.label}</p>
             </div>
           ))}

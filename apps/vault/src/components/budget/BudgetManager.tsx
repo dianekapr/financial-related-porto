@@ -3,9 +3,13 @@ import { useState, useTransition } from 'react'
 import { useRouter } from 'next/navigation'
 import { createClient } from '@portfolio/supabase'
 import type { Category, Budget } from '@portfolio/supabase'
+import { format } from 'date-fns'
 import { formatIDR } from '../../lib/money'
 import { useLocale } from '../LocaleProvider'
+import { getDateLocale } from '../../lib/dateLocale'
 import { translateCategoryName } from '../../lib/i18n'
+import { CategoryIcon } from '../../lib/categoryIcons'
+import { ChevronLeft, ChevronRight, X, TriangleAlert } from 'lucide-react'
 
 function ProgressBar({ pct, color }: { pct: number; color: string }) {
   const over = pct > 100
@@ -37,6 +41,12 @@ export default function BudgetManager({
   const [isPending, startTransition] = useTransition()
   const [editing, setEditing] = useState<string | null>(null)
   const [inputVal, setInputVal] = useState('')
+
+  const goToMonth = (delta: number) => {
+    const d = new Date(year, month - 1 + delta, 1)
+    const params = new URLSearchParams({ month: String(d.getMonth() + 1), year: String(d.getFullYear()) })
+    router.push(`/dashboard/budget?${params}`)
+  }
 
   const getBudget = (catId: string) => budgets.find(b => b.category_id === catId)
   const getSpent = (catId: string) =>
@@ -75,6 +85,17 @@ export default function BudgetManager({
 
   return (
     <div className="space-y-4">
+      {/* Month selector */}
+      <div className="flex items-center gap-1 bg-vault-card border border-vault-border rounded-xl p-1 w-fit">
+        <button onClick={() => goToMonth(-1)}
+          className="w-7 h-7 flex items-center justify-center text-vault-text-dim hover:text-vault-text rounded-lg transition-colors"><ChevronLeft className="w-4 h-4" /></button>
+        <span className="font-mono text-sm text-vault-text px-2 min-w-[110px] text-center">
+          {format(new Date(year, month - 1), 'MMMM yyyy', { locale: getDateLocale(locale) })}
+        </span>
+        <button onClick={() => goToMonth(1)}
+          className="w-7 h-7 flex items-center justify-center text-vault-text-dim hover:text-vault-text rounded-lg transition-colors"><ChevronRight className="w-4 h-4" /></button>
+      </div>
+
       {/* Total overview */}
       <div className="bg-vault-card border border-vault-border rounded-2xl p-5">
         <div className="flex items-end justify-between mb-3">
@@ -110,9 +131,9 @@ export default function BudgetManager({
             <div key={cat.id} className="bg-vault-card border border-vault-border rounded-2xl p-4">
               <div className="flex items-start justify-between gap-3">
                 <div className="flex items-center gap-2.5">
-                  <div className="w-9 h-9 rounded-xl flex items-center justify-center text-lg flex-shrink-0"
+                  <div className="w-9 h-9 rounded-xl flex items-center justify-center flex-shrink-0"
                     style={{ backgroundColor: `${cat.color}20` }}>
-                    {cat.icon}
+                    <CategoryIcon icon={cat.icon} className="w-4 h-4" style={{ color: cat.color }} />
                   </div>
                   <div>
                     <p className="text-sm font-medium text-vault-text">{translateCategoryName(cat.name, locale)}</p>
@@ -124,7 +145,7 @@ export default function BudgetManager({
                 <div className="flex items-center gap-1">
                   {budget && (
                     <button onClick={() => handleDelete(budget.id)}
-                      className="text-vault-muted hover:text-vault-danger text-xs px-1.5 py-1 rounded transition-colors">✕</button>
+                      className="text-vault-muted hover:text-vault-danger px-1.5 py-1 rounded transition-colors"><X className="w-3.5 h-3.5" /></button>
                   )}
                   <button
                     onClick={() => {
@@ -154,7 +175,7 @@ export default function BudgetManager({
                     {isPending ? '...' : t('ok')}
                   </button>
                   <button onClick={() => setEditing(null)}
-                    className="text-vault-text-dim hover:text-vault-text px-2 text-xs font-mono">✕</button>
+                    className="text-vault-text-dim hover:text-vault-text px-2"><X className="w-3.5 h-3.5" /></button>
                 </div>
               )}
 
@@ -164,7 +185,8 @@ export default function BudgetManager({
                   <div className="flex justify-between items-center mt-1">
                     <p className={`text-xs font-mono ${pct > 100 ? 'text-vault-danger' : 'text-vault-text-dim'}`}>{pct}%</p>
                     {pct > 80 && (
-                      <p className={`text-xs font-mono ${pct > 100 ? 'text-vault-danger' : 'text-vault-warning'}`}>
+                      <p className={`flex items-center gap-1 text-xs font-mono ${pct > 100 ? 'text-vault-danger' : 'text-vault-warning'}`}>
+                        <TriangleAlert className="w-3 h-3" />
                         {pct > 100 ? t('budgetOver') : t('budgetAlmostOut')}
                       </p>
                     )}

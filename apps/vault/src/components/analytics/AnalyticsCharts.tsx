@@ -11,6 +11,7 @@ import Select from '../ui/Select'
 import { useLocale } from '../LocaleProvider'
 import { getDateLocale } from '../../lib/dateLocale'
 import { translateCategoryName } from '../../lib/i18n'
+import { CategoryIcon } from '../../lib/categoryIcons'
 
 function rangeToDates(range: string, now: Date): { start: Date | null; end: Date | null } {
   switch (range) {
@@ -68,7 +69,7 @@ export default function AnalyticsCharts({ transactions, wallets }: { transaction
   const categoryMap: Record<string, { amount: number; icon: string; color: string }> = {}
   for (const tx of expenses) {
     const key = tx.category?.name ?? 'Lainnya'
-    if (!categoryMap[key]) categoryMap[key] = { amount: 0, icon: tx.category?.icon ?? '📌', color: tx.category?.color ?? 'var(--vault-text-dim)' }
+    if (!categoryMap[key]) categoryMap[key] = { amount: 0, icon: tx.category?.icon ?? 'Tag', color: tx.category?.color ?? 'var(--vault-text-dim)' }
     categoryMap[key].amount += tx.amount
   }
   const pieData = Object.entries(categoryMap)
@@ -102,7 +103,10 @@ export default function AnalyticsCharts({ transactions, wallets }: { transaction
     const d = payload[0].payload
     return (
       <div className="bg-vault-surface border border-vault-border rounded-xl p-3 text-xs font-mono shadow-xl">
-        <p className="text-vault-text font-semibold">{d.icon} {translateCategoryName(d.name, locale)}</p>
+        <p className="text-vault-text font-semibold flex items-center gap-1.5">
+          <CategoryIcon icon={d.icon} className="w-3.5 h-3.5" style={{ color: d.color }} />
+          {translateCategoryName(d.name, locale)}
+        </p>
         <p className="text-vault-accent mt-1">{formatIDR(d.amount)}</p>
         <p className="text-vault-text-dim">{totalExpense > 0 ? Math.round((d.amount / totalExpense) * 100) : 0}%</p>
       </div>
@@ -189,7 +193,10 @@ export default function AnalyticsCharts({ transactions, wallets }: { transaction
               <div key={d.name} className="flex items-center justify-between gap-2">
                 <div className="flex items-center gap-2">
                   <span className="w-2 h-2 rounded-full flex-shrink-0" style={{ backgroundColor: d.color }} />
-                  <span className="text-xs text-vault-text-dim font-mono">{d.icon} {translateCategoryName(d.name, locale)}</span>
+                  <span className="text-xs text-vault-text-dim font-mono flex items-center gap-1">
+                    <CategoryIcon icon={d.icon} className="w-3 h-3" style={{ color: d.color }} />
+                    {translateCategoryName(d.name, locale)}
+                  </span>
                 </div>
                 <div className="flex items-center gap-2">
                   <span className="text-xs text-vault-text-dim font-mono">
@@ -217,7 +224,7 @@ export default function AnalyticsCharts({ transactions, wallets }: { transaction
                     <div className="flex items-center justify-between mb-1.5">
                       <div className="flex items-center gap-2">
                         <span className="text-vault-text-dim font-mono text-xs w-4">#{i + 1}</span>
-                        <span className="text-base">{cat.icon}</span>
+                        <CategoryIcon icon={cat.icon} className="w-4 h-4" style={{ color: cat.color }} />
                         <span className="text-sm text-vault-text font-medium">{translateCategoryName(cat.name, locale)}</span>
                       </div>
                       <span className="text-sm font-mono text-vault-text font-semibold">{formatIDR(cat.amount)}</span>

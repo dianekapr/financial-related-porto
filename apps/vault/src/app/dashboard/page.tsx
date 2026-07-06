@@ -8,11 +8,16 @@ import { formatIDR } from '@/lib/money'
 import { t } from '@/lib/i18n'
 import { getServerLocale } from '@/lib/getServerLocale'
 import { getDateLocale } from '@/lib/dateLocale'
+import { processDueRecurring } from '@/lib/recurring'
 
 export default async function DashboardPage() {
   const supabase = createServerSupabaseClient()
   const { data: { session } } = await supabase.auth.getSession()
   const locale = getServerLocale()
+
+  // Turn any due recurring rules into real transactions before reading
+  // this month's data, so a rule that just came due shows up immediately
+  await processDueRecurring(supabase, session!.user.id)
 
   const now = new Date()
   const month = now.getMonth() + 1
@@ -30,9 +35,11 @@ export default async function DashboardPage() {
     .lte('date', endOfMonth)
     .order('date', { ascending: false })
 
-  // Compute summary
-  const income = transactions?.filter(tx => tx.type === 'income').reduce((s, tx) => s + tx.amount, 0) ?? 0
-  const expense = transactions?.filter(tx => tx.type === 'expense').reduce((s, tx) => s + tx.amount, 0) ?? 0
+  // Compute summary — wallet transfers aren't real income/spending, so they're
+  // excluded here even though they still show up in the ticker below
+  const realTransactions = transactions?.filter(tx => !tx.transfer_group_id) ?? []
+  const income = realTransactions.filter(tx => tx.type === 'income').reduce((s, tx) => s + tx.amount, 0)
+  const expense = realTransactions.filter(tx => tx.type === 'expense').reduce((s, tx) => s + tx.amount, 0)
 
   // Fetch budgets with spending
   const { data: budgets } = await supabase
@@ -42,11 +49,12 @@ export default async function DashboardPage() {
     .eq('month', month)
     .eq('year', year)
 
-  // Fetch last 6 months for chart
+  // Fetch last 6 months for chart (transfers excluded, same reasoning as above)
   const { data: allTransactions } = await supabase
     .from('transactions')
     .select('amount, type, date')
     .eq('user_id', session!.user.id)
+    .is('transfer_group_id', null)
     .gte('date', `${year - 1}-${String(month).padStart(2, '0')}-01`)
     .order('date', { ascending: true })
 
@@ -71,7 +79,7 @@ export default async function DashboardPage() {
       </div>
 
       {/* Summary cards */}
-      <SummaryCards income={income} expense={expense} txCount={transactions?.length ?? 0} />
+      <SummaryCards income={income} expense={expense} txCount={realTransactions.length} />
 
       {/* Main grid */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">

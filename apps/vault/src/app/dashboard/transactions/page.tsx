@@ -1,5 +1,6 @@
 import { createServerSupabaseClient } from '../../../../../../packages/supabase/src/server'
 import TransactionList from '@/components/transactions/TransactionList'
+import RecurringManager from '@/components/transactions/RecurringManager'
 import { t } from '@/lib/i18n'
 import { getServerLocale } from '@/lib/getServerLocale'
 
@@ -29,14 +30,21 @@ export default async function TransactionsPage({
 
   if (type !== 'all') query = query.eq('type', type)
 
-  const [{ data: transactions }, { data: wallets }] = await Promise.all([
+  const [{ data: transactions }, { data: wallets }, { data: recurringRules }] = await Promise.all([
     query,
     supabase.from('wallets').select('balance').eq('user_id', session!.user.id),
+    supabase
+      .from('recurring_transactions')
+      .select('*, category:categories(*), wallet:wallets(*)')
+      .eq('user_id', session!.user.id)
+      .order('created_at', { ascending: false }),
   ])
 
   const locale = getServerLocale()
-  const income = transactions?.filter(tx => tx.type === 'income').reduce((s, tx) => s + tx.amount, 0) ?? 0
-  const expense = transactions?.filter(tx => tx.type === 'expense').reduce((s, tx) => s + tx.amount, 0) ?? 0
+  // Wallet transfers still appear in the list below, but aren't real
+  // income/spending, so they're excluded from these totals
+  const income = transactions?.filter(tx => tx.type === 'income' && !tx.transfer_group_id).reduce((s, tx) => s + tx.amount, 0) ?? 0
+  const expense = transactions?.filter(tx => tx.type === 'expense' && !tx.transfer_group_id).reduce((s, tx) => s + tx.amount, 0) ?? 0
   // "Saldo" here is the real money the user has right now — the sum of
   // all wallet balances — not income-minus-expense for the filtered
   // period, which is a cash-flow number and not an actual balance
@@ -49,6 +57,8 @@ export default async function TransactionsPage({
         <p className="text-vault-text-dim text-sm font-mono uppercase tracking-widest">{t(locale, 'transactionsBreadcrumb')}</p>
         <h1 className="font-display text-4xl md:text-5xl text-vault-text tracking-wider mt-1">{t(locale, 'transactionsTitle')}</h1>
       </div>
+
+      <RecurringManager rules={recurringRules ?? []} />
 
       <TransactionList
         transactions={transactions ?? []}

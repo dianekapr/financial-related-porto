@@ -1,28 +1,28 @@
 'use client'
 import { useEffect, useState, useTransition } from 'react'
 import { createClient } from '@portfolio/supabase'
-import type { Category, Wallet, Transaction } from '@portfolio/supabase'
+import type { Category, Wallet, RecurringFrequency } from '@portfolio/supabase'
 import { useRouter } from 'next/navigation'
-import { formatIDR } from '../lib/money'
-import { useLocale } from './LocaleProvider'
-import { translateCategoryName } from '../lib/i18n'
-import { CategoryIcon } from '../lib/categoryIcons'
-import { ArrowUpCircle, ArrowDownCircle } from 'lucide-react'
+import { useLocale } from '../LocaleProvider'
+import { translateCategoryName } from '../../lib/i18n'
+import { CategoryIcon } from '../../lib/categoryIcons'
+import Select from '../ui/Select'
+import { ArrowUpCircle, ArrowDownCircle, Info } from 'lucide-react'
 
-export default function AddTransactionModal({ transaction, onClose }: { transaction?: Transaction; onClose: () => void }) {
+export default function AddRecurringModal({ onClose }: { onClose: () => void }) {
   const router = useRouter()
   const supabase = createClient()
   const { t, locale } = useLocale()
   const [isPending, startTransition] = useTransition()
-  const isEdit = !!transaction
 
-  const [type, setType] = useState<'income' | 'expense'>(transaction?.type ?? 'expense')
-  const [amount, setAmount] = useState(transaction ? transaction.amount.toLocaleString('id-ID') : '')
-  const [note, setNote] = useState(transaction?.note ?? '')
-  const [date, setDate] = useState(transaction?.date ?? new Date().toISOString().split('T')[0])
-  const [categoryId, setCategoryId] = useState<string | null>(transaction?.category_id ?? null)
+  const [type, setType] = useState<'income' | 'expense'>('expense')
+  const [amount, setAmount] = useState('')
+  const [note, setNote] = useState('')
+  const [frequency, setFrequency] = useState<RecurringFrequency>('monthly')
+  const [startDate, setStartDate] = useState(new Date().toISOString().split('T')[0])
+  const [categoryId, setCategoryId] = useState<string | null>(null)
   const [categories, setCategories] = useState<Category[]>([])
-  const [walletId, setWalletId] = useState<string | null>(transaction?.wallet_id ?? null)
+  const [walletId, setWalletId] = useState<string | null>(null)
   const [wallets, setWallets] = useState<Wallet[]>([])
 
   useEffect(() => {
@@ -41,37 +41,23 @@ export default function AddTransactionModal({ transaction, onClose }: { transact
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
-
     const numericAmount = parseFloat(amount.replace(/[^0-9]/g, ''))
     if (!numericAmount || numericAmount <= 0) return
 
-    const payload = {
-      amount: numericAmount,
-      type,
-      category_id: categoryId,
-      wallet_id: walletId,
-      note: note || null,
-      date,
-    }
-
     startTransition(async () => {
-      // Wallet balance updates happen server-side in the API route, so both
-      // add and edit keep the balance consistent through the same code path
-      // that transaction deletion already uses
-      if (isEdit) {
-        await fetch('/api/transactions', {
-          method: 'PATCH',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ id: transaction!.id, ...payload }),
-        })
-      } else {
-        await fetch('/api/transactions', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(payload),
-        })
-      }
-
+      await fetch('/api/recurring', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          amount: numericAmount,
+          type,
+          category_id: categoryId,
+          wallet_id: walletId,
+          note: note || null,
+          frequency,
+          next_run_date: startDate,
+        }),
+      })
       router.refresh()
       onClose()
     })
@@ -83,18 +69,21 @@ export default function AddTransactionModal({ transaction, onClose }: { transact
       : !['Gaji', 'Freelance'].some(n => c.name.includes(n))
   )
 
+  const FREQUENCIES: { value: RecurringFrequency; label: string }[] = [
+    { value: 'daily', label: t('recurringFrequencyDaily') },
+    { value: 'weekly', label: t('recurringFrequencyWeekly') },
+    { value: 'monthly', label: t('recurringFrequencyMonthly') },
+  ]
+
   return (
     <div className="fixed inset-0 z-50 flex items-end md:items-center justify-center p-0 md:p-4">
-      {/* Backdrop */}
       <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" onClick={onClose} />
 
-      {/* Modal */}
       <div className="relative w-full md:max-w-md bg-vault-surface border border-vault-border rounded-t-3xl md:rounded-2xl shadow-2xl animate-fade-up">
-        {/* Handle */}
         <div className="md:hidden w-10 h-1 bg-vault-border rounded-full mx-auto mt-3 mb-1" />
 
         <div className="p-6">
-          <h2 className="font-display text-vault-accent tracking-widest text-2xl mb-6">{t(isEdit ? 'editTxTitle' : 'addTxTitle')}</h2>
+          <h2 className="font-display text-vault-accent tracking-widest text-2xl mb-6">{t('recurringModalTitle')}</h2>
 
           <form onSubmit={handleSubmit} className="space-y-4">
             {/* Type toggle */}
@@ -177,12 +166,34 @@ export default function AddTransactionModal({ transaction, onClose }: { transact
                       style={walletId === w.id ? { backgroundColor: w.color } : {}}
                     >
                       <span>{w.name}</span>
-                      <span className="opacity-75 text-xs">{formatIDR(w.balance)}</span>
                     </button>
                   ))}
                 </div>
               </div>
             )}
+
+            {/* Frequency + start date */}
+            <div className="flex gap-3">
+              <div className="flex-1">
+                <label className="text-vault-text-dim text-xs font-mono uppercase tracking-widest block mb-2">{t('recurringFrequency')}</label>
+                <Select value={frequency} onChange={v => setFrequency(v as RecurringFrequency)} options={FREQUENCIES} className="w-full" />
+              </div>
+              <div className="flex-1">
+                <label className="text-vault-text-dim text-xs font-mono uppercase tracking-widest block mb-2">{t('recurringStartDate')}</label>
+                <input
+                  type="date"
+                  value={startDate}
+                  onChange={e => setStartDate(e.target.value)}
+                  className="w-full bg-vault-card border border-vault-border rounded-xl py-3 px-4 text-sm text-vault-text font-mono focus:outline-none focus:border-vault-accent/50 transition-colors"
+                />
+              </div>
+            </div>
+
+            {/* Notice */}
+            <div className="flex items-start gap-2 bg-vault-card border border-vault-border rounded-xl px-3 py-2.5">
+              <Info className="w-3.5 h-3.5 text-vault-text-dim flex-shrink-0 mt-0.5" />
+              <p className="text-vault-text-dim text-xs font-mono leading-relaxed">{t('recurringNotice')}</p>
+            </div>
 
             {/* Note */}
             <div>
@@ -196,24 +207,12 @@ export default function AddTransactionModal({ transaction, onClose }: { transact
               />
             </div>
 
-            {/* Date */}
-            <div>
-              <label className="text-vault-text-dim text-xs font-mono uppercase tracking-widest block mb-2">{t('addTxDate')}</label>
-              <input
-                type="date"
-                value={date}
-                onChange={e => setDate(e.target.value)}
-                className="w-full bg-vault-card border border-vault-border rounded-xl py-3 px-4 text-sm text-vault-text font-mono focus:outline-none focus:border-vault-accent/50 transition-colors"
-              />
-            </div>
-
-            {/* Submit */}
             <button
               type="submit"
               disabled={isPending || !amount}
               className="w-full bg-vault-accent text-vault-accent-contrast rounded-xl py-3.5 font-mono font-semibold text-sm hover:bg-vault-accent-light active:scale-[0.98] transition-all disabled:opacity-50 mt-2"
             >
-              {isPending ? t('saving') : t(isEdit ? 'editTxSubmit' : 'addTxSubmit')}
+              {isPending ? t('saving') : t('recurringSubmit')}
             </button>
           </form>
         </div>

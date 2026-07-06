@@ -1,6 +1,7 @@
 import { createServerSupabaseClient } from '../../../../../../../packages/supabase/src/server'
 import { notFound } from 'next/navigation'
 import Link from 'next/link'
+import { ChevronLeft } from 'lucide-react'
 import WalletTransactions from '@/components/wallet/WalletTransactions'
 import { formatIDR } from '@/lib/money'
 import { t } from '@/lib/i18n'
@@ -30,7 +31,8 @@ export default async function WalletDetailPage({ params }: { params: { id: strin
   return (
     <div className="space-y-6">
       <div>
-        <Link href="/dashboard/wallets" className="text-vault-text-dim text-xs font-mono hover:text-vault-accent transition-colors">
+        <Link href="/dashboard/wallets" className="inline-flex items-center gap-0.5 text-vault-text-dim text-xs font-mono hover:text-vault-accent transition-colors">
+          <ChevronLeft className="w-3 h-3" />
           {t(locale, 'walletBackLink')}
         </Link>
         <div className="flex items-center gap-2.5 mt-2">

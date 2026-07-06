@@ -13,6 +13,7 @@ export default async function AnalyticsPage() {
       .from('transactions')
       .select('*, category:categories(*)')
       .eq('user_id', session!.user.id)
+      .is('transfer_group_id', null)
       .order('date', { ascending: true }),
     supabase
       .from('wallets')

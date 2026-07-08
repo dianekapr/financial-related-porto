@@ -10,7 +10,7 @@ import SettleModal from './SettleModal'
 import EditBillModal from './EditBillModal'
 import ConfirmDialog from '../ConfirmDialog'
 import { useToast } from '../Toast'
-import { Check, Loader2, Camera, Image as ImageIcon, X, Scissors, Plus, Settings } from 'lucide-react'
+import { Check, Loader2, Camera, Image as ImageIcon, Upload, X, Scissors, Plus, Settings } from 'lucide-react'
 
 type FullItem = BillItem & { assignments: (BillItemAssignment & { member: BillMember | null })[] }
 
@@ -56,6 +56,7 @@ export default function BillDetail({
   const [deletingItemId, setDeletingItemId] = useState<string | null>(null)
   const [newItem, setNewItem] = useState({ name: '', price: '', qty: '1' })
   const [showAddItem, setShowAddItem] = useState(false)
+  const [showUploadSource, setShowUploadSource] = useState(false)
 
   // Compute per-member totals
   const memberTotals = members.map(m => {
@@ -343,20 +344,13 @@ export default function BillDetail({
           </div>
           {!isSettled && (
             <div className="flex items-center gap-2">
-              {/* Upload buttons */}
+              {/* Upload button */}
               <button
-                onClick={() => cameraRef.current?.click()}
+                onClick={() => setShowUploadSource(true)}
                 disabled={scanning}
                 className="flex items-center gap-1.5 bg-white border border-slice-border rounded-xl px-3 py-2 text-sm text-slice-dark hover:border-slice-orange/40 transition-all text-xs font-medium disabled:opacity-60"
               >
-                {scanning ? <><Loader2 size={14} className="animate-spin" /> Scanning...</> : <><Camera size={14} /> Kamera</>}
-              </button>
-              <button
-                onClick={() => galleryRef.current?.click()}
-                disabled={scanning}
-                className="flex items-center gap-1.5 bg-white border border-slice-border rounded-xl px-3 py-2 text-sm text-slice-dark hover:border-slice-orange/40 transition-all text-xs font-medium disabled:opacity-60"
-              >
-                {scanning ? <><Loader2 size={14} className="animate-spin" /> Scanning...</> : <><ImageIcon size={14} /> Galeri</>}
+                {scanning ? <><Loader2 size={14} className="animate-spin" /> Scanning...</> : <><Upload size={14} /> Upload</>}
               </button>
               <button
                 onClick={() => setShowAddItem(true)}
@@ -373,6 +367,38 @@ export default function BillDetail({
             </>
           )}
         </div>
+
+        {showUploadSource && (
+          <div className="fixed inset-0 z-[60] flex items-center justify-center px-4">
+            <div className="absolute inset-0 bg-black/40 backdrop-blur-sm" onClick={() => setShowUploadSource(false)} />
+            <div className="relative w-full max-w-xs bg-white rounded-2xl shadow-2xl animate-bounce-in p-5">
+              <h3 className="font-display text-lg text-slice-dark">Upload struk</h3>
+              <p className="text-slice-muted text-sm mt-1">Ambil foto dari mana?</p>
+              <div className="flex gap-2 mt-5">
+                <button
+                  onClick={() => { setShowUploadSource(false); cameraRef.current?.click() }}
+                  className="flex-1 flex flex-col items-center gap-1.5 py-3.5 rounded-xl border border-slice-border hover:border-slice-orange/40 hover:bg-slice-surface transition-all"
+                >
+                  <Camera size={20} className="text-slice-orange" />
+                  <span className="text-sm font-medium text-slice-dark">Kamera</span>
+                </button>
+                <button
+                  onClick={() => { setShowUploadSource(false); galleryRef.current?.click() }}
+                  className="flex-1 flex flex-col items-center gap-1.5 py-3.5 rounded-xl border border-slice-border hover:border-slice-orange/40 hover:bg-slice-surface transition-all"
+                >
+                  <ImageIcon size={20} className="text-slice-orange" />
+                  <span className="text-sm font-medium text-slice-dark">Galeri</span>
+                </button>
+              </div>
+              <button
+                onClick={() => setShowUploadSource(false)}
+                className="w-full mt-2 py-2 rounded-xl text-sm font-medium text-slice-muted hover:bg-slice-surface transition-colors"
+              >
+                Batal
+              </button>
+            </div>
+          </div>
+        )}
 
         {scanError && (
           <div className="px-5 py-3 bg-red-50 border-b border-red-100 flex items-center justify-between gap-2">
